@@ -183,6 +183,12 @@ export const useReceiverPeer = () => {
             return prev.map((c, i) => (i === cIdx ? newC : c));
         });
     };
+    const closeConnection = (customer: Customer) => {
+        customer.conn.close();
+        setCustomers((prev) =>
+            prev.filter((c) => c.peerId !== customer.peerId)
+        );
+    };
 
-    return { serverId, qrCodeUrl, customers, requestDownload };
+    return { serverId, qrCodeUrl, customers, requestDownload, closeConnection };
 };

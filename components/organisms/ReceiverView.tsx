@@ -10,8 +10,10 @@ import {
     Folder,
     DownloadCloud,
     CheckSquare,
+    ClosedCaption,
+    X,
 } from "lucide-react";
-import { useReceiverPeer } from "../../hooks/useReceiverPeer";
+import { Customer, useReceiverPeer } from "../../hooks/useReceiverPeer";
 import { useZipDownloader } from "../../hooks/useZipDownloader";
 import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
@@ -19,7 +21,7 @@ import { FileGridItem } from "../molecules/FileGridItem";
 import Image from "next/image";
 
 const ReceiverView: React.FC = () => {
-    const { serverId, qrCodeUrl, customers, requestDownload } =
+    const { serverId, qrCodeUrl, customers, requestDownload, closeConnection } =
         useReceiverPeer();
     const { downloadSelectedZip } = useZipDownloader();
 
@@ -94,7 +96,9 @@ const ReceiverView: React.FC = () => {
     );
 
     const isMobile = !isDesktop;
-
+    const handleCloseConnection = (customer: Customer) => {
+        closeConnection(customer);
+    };
     return (
         <div className="flex flex-col h-full bg-black text-white relative lg:flex-row overflow-hidden">
             {/* Sidebar (Customers) */}
@@ -189,6 +193,15 @@ const ReceiverView: React.FC = () => {
                                     <p className="text-xs text-gray-500 truncate">
                                         {c.files.length} files
                                     </p>
+                                </div>
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCloseConnection(c);
+                                    }}
+                                    className="text-red-500 hover:text-red-400 p-1 cursor-pointer"
+                                >
+                                    <X className="w-5 h-5" />
                                 </div>
                             </button>
                         ))

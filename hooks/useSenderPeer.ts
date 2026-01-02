@@ -102,7 +102,7 @@ export const useSenderPeer = (username: string) => {
                 });
                 if (connRef.current) connRef.current.close();
             },
-            isAuto ? 5000 : 15000
+            isAuto ? 5000 : 60000
         );
 
         const conn = peerRef.current.connect(sanitizedId, {
