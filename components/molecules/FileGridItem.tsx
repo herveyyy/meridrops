@@ -1,8 +1,8 @@
 import React from "react";
 import { FileText, Download, Check, Lock } from "lucide-react";
-import { formatBytes } from "../../services/utils.ts";
 import { Button } from "../atoms/Button";
-import { ReceivedFile } from "../../hooks/useReceiverPeer";
+import { ReceivedFile } from "@/hooks/useReceiverPeer";
+import { formatBytes } from "@/services/utils";
 
 interface FileGridItemProps {
     file: ReceivedFile;
