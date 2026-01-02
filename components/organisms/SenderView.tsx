@@ -1,0 +1,283 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import {
+    Plus,
+    CheckCircle2,
+    File as FileIcon,
+    ShieldCheck,
+    User,
+} from "lucide-react";
+import { useSenderPeer } from "@/hooks/useSenderPeer";
+import { formatBytes } from "@/services/utils";
+import { Button } from "../atoms/Button";
+import { Input } from "../atoms/Input";
+import { Header } from "../molecules/Header";
+import { StatusCard } from "./StatusCard";
+
+const SenderView: React.FC = () => {
+    const [username, setUsername] = useState<string>("");
+    const [inputName, setInputName] = useState("");
+
+    // Load username from localStorage on mount
+    useEffect(() => {
+        const savedUsername = localStorage.getItem("aether_username");
+        if (savedUsername) {
+            setUsername(savedUsername);
+        }
+    }, []);
+
+    const {
+        adminId,
+        setAdminId,
+        connectionStatus,
+        setConnectionStatus,
+        connectToAdmin,
+        disconnect,
+        files,
+        addFiles,
+        approvalQueue,
+        handleApprove,
+        handleDeny,
+    } = useSenderPeer(username);
+
+    // Scanner Effect
+    useEffect(() => {
+        let scanner: any;
+        if (connectionStatus === "scanning") {
+            scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                false
+            );
+            scanner.render(
+                (decodedText: string) => {
+                    connectToAdmin(decodedText);
+                    scanner.clear();
+                },
+                (error: any) => {}
+            );
+        }
+        return () => {
+            if (scanner) scanner.clear().catch(console.error);
+        };
+    }, [connectionStatus]);
+
+    const handleNameSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = inputName.trim();
+        if (name) {
+            localStorage.setItem("aether_username", name);
+            setUsername(name);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) addFiles(e.target.files);
+    };
+
+    // 1. Identity Step
+    if (!username) {
+        return (
+            <div className="flex flex-col h-full bg-black text-white p-6">
+                <Header title="" onBack={() => setUsername("")} />
+                <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full animate-pop">
+                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <User className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-center mb-2">
+                        What's your name?
+                    </h2>
+                    <p className="text-gray-400 text-center text-sm mb-8">
+                        This helps the Admin identify your device.
+                    </p>
+
+                    <form onSubmit={handleNameSubmit} className="space-y-4">
+                        <Input
+                            value={inputName}
+                            onChange={(e) => setInputName(e.target.value)}
+                            placeholder="Enter your name (e.g. John)"
+                            className="text-center"
+                            autoFocus
+                        />
+                        <Button
+                            type="submit"
+                            disabled={!inputName.trim()}
+                            fullWidth
+                        >
+                            Continue
+                        </Button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
+
+    // 2. Main Dashboard
+    return (
+        <div className="flex flex-col h-full  bg-black text-white relative">
+            <Header
+                title="Send to Server"
+                subtitle={`Logged in as ${username}`}
+                onBack={() => console.log("first")}
+            />
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                {/* Connection Widget */}
+                <StatusCard
+                    status={connectionStatus}
+                    adminId={adminId}
+                    setAdminId={setAdminId}
+                    onConnect={() => connectToAdmin(adminId)}
+                    onScan={() => setConnectionStatus("scanning")}
+                    onCancel={() => setConnectionStatus("idle")}
+                    onDisconnect={disconnect}
+                />
+
+                {/* Upload Interface */}
+                {connectionStatus === "connected" && (
+                    <div className="animate-slide-up space-y-6">
+                        <div className="relative group">
+                            <input
+                                type="file"
+                                multiple
+                                onChange={handleFileChange}
+                                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                            />
+                            <div className="bg-gray-ios-light/50 border-2 border-dashed border-gray-600 hover:border-primary hover:bg-gray-ios-light transition-all duration-300 rounded-2xl p-8 flex flex-col items-center justify-center group-active:scale-95">
+                                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <Plus className="w-8 h-8 text-primary" />
+                                </div>
+                                <span className="font-medium text-lg text-white">
+                                    Tap to Upload
+                                </span>
+                                <span className="text-sm text-gray-500 mt-1">
+                                    Photos, Documents, Archives
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* File List */}
+                        {files.length > 0 && (
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                    <h3 className="text-sm font-semibold text-gray-400">
+                                        Transfers ({files.length})
+                                    </h3>
+                                </div>
+                                {files.map((f, i) => (
+                                    <div
+                                        key={f.id}
+                                        className="bg-surface rounded-xl p-4 flex items-center gap-3 animate-slide-up"
+                                        style={{
+                                            animationDelay: `${i * 0.05}s`,
+                                        }}
+                                    >
+                                        <div
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                                f.status === "sent"
+                                                    ? "bg-success/20"
+                                                    : "bg-gray-800"
+                                            }`}
+                                        >
+                                            {f.status === "sent" ? (
+                                                <CheckCircle2 className="w-5 h-5 text-success" />
+                                            ) : (
+                                                <FileIcon className="w-5 h-5 text-gray-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <p className="font-medium text-sm truncate text-white">
+                                                    {f.file.name}
+                                                </p>
+                                                <span className="text-xs text-gray-500">
+                                                    {formatBytes(f.file.size)}
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all duration-300 ${
+                                                        f.status === "sent"
+                                                            ? "bg-success"
+                                                            : "bg-primary"
+                                                    }`}
+                                                    style={{
+                                                        width: `${f.progress}%`,
+                                                    }}
+                                                ></div>
+                                            </div>
+                                            <div className="flex justify-between mt-1">
+                                                <span className="text-[10px] text-gray-500 capitalize">
+                                                    {f.status === "meta-sent"
+                                                        ? "Available to Admin"
+                                                        : f.status.replace(
+                                                              "-",
+                                                              " "
+                                                          )}
+                                                </span>
+                                                {f.status ===
+                                                    "transferring" && (
+                                                    <span className="text-[10px] text-primary">
+                                                        {f.progress}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Approval Modal */}
+            {approvalQueue.length > 0 && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-pop">
+                    <div className="bg-surface w-full max-w-sm rounded-2xl p-6 border border-white/10 shadow-2xl">
+                        <div className="flex justify-center mb-4">
+                            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+                                <ShieldCheck className="w-6 h-6 text-primary" />
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-bold text-center mb-2">
+                            Allow Download?
+                        </h3>
+                        <p className="text-gray-400 text-center text-sm mb-6">
+                            The Admin wants to download{" "}
+                            <span className="text-white font-medium">
+                                "{approvalQueue[0].fileName}"
+                            </span>
+                            .
+                            {approvalQueue.length > 1 && (
+                                <span className="block mt-2 text-xs text-gray-500">
+                                    +{approvalQueue.length - 1} more requests
+                                    pending
+                                </span>
+                            )}
+                        </p>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={handleDeny}
+                                fullWidth
+                            >
+                                Deny
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleApprove}
+                                fullWidth
+                            >
+                                Allow
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default SenderView;
