@@ -69,7 +69,7 @@ export const useSenderPeer = (username: string) => {
             !autoConnectAttempted.current &&
             connectionStatus === "idle"
         ) {
-            const lastAdminId = localStorage.getItem("aether_last_admin_id");
+            const lastAdminId = localStorage.getItem("admin_id_last_admin_id");
             if (lastAdminId) {
                 autoConnectAttempted.current = true;
                 setConnectionStatus("auto-connecting");
@@ -114,7 +114,7 @@ export const useSenderPeer = (username: string) => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             setConnectionStatus("connected");
             connRef.current = conn;
-            localStorage.setItem("aether_last_admin_id", sanitizedId);
+            localStorage.setItem("admin_id_last_admin_id", sanitizedId);
 
             // Resend metadata for existing files
             if (filesRef.current.length > 0) {
@@ -249,7 +249,11 @@ export const useSenderPeer = (username: string) => {
         if (connRef.current) connRef.current.close();
         setConnectionStatus("idle");
     };
-
+    const handleBack = () => {
+        if (connRef.current) connRef.current.close();
+        localStorage.clear();
+        window.location.reload();
+    };
     return {
         peerId,
         adminId,
@@ -263,5 +267,6 @@ export const useSenderPeer = (username: string) => {
         approvalQueue,
         handleApprove,
         handleDeny,
+        handleBack,
     };
 };

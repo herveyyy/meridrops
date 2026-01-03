@@ -21,7 +21,7 @@ const SenderView: React.FC = () => {
 
     // Load username from localStorage on mount
     useEffect(() => {
-        const savedUsername = localStorage.getItem("aether_username");
+        const savedUsername = localStorage.getItem("username");
         if (savedUsername) {
             setUsername(savedUsername);
         }
@@ -39,6 +39,7 @@ const SenderView: React.FC = () => {
         approvalQueue,
         handleApprove,
         handleDeny,
+        handleBack,
     } = useSenderPeer(username);
 
     // Scanner Effect
@@ -67,7 +68,7 @@ const SenderView: React.FC = () => {
         e.preventDefault();
         const name = inputName.trim();
         if (name) {
-            localStorage.setItem("aether_username", name);
+            localStorage.setItem("username", name);
             setUsername(name);
         }
     };
@@ -80,7 +81,7 @@ const SenderView: React.FC = () => {
     if (!username) {
         return (
             <div className="flex flex-col h-full bg-black text-white p-6">
-                <Header title="" onBack={() => setUsername("")} />
+                <Header title="" onBack={handleBack} />
                 <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full animate-pop">
                     <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6 mx-auto">
                         <User className="w-8 h-8 text-primary" />
@@ -119,9 +120,42 @@ const SenderView: React.FC = () => {
             <Header
                 title="Send to Server"
                 subtitle={`Logged in as ${username}`}
-                onBack={() => console.log("first")}
+                onBack={handleBack}
             />
-
+            <div
+                id="reader"
+                className="mx-auto w-full max-w-sm overflow-hidden rounded-[2.5rem] border-0!  p-8 shadow-2xl backdrop-blur-xl
+    /* 1. Dashboard Layout - Stacks everything vertically */
+    [&_#reader__dashboard_section]:p-0! [&_#reader__dashboard_section]:text-center!
+    [&_#reader__dashboard_section_csr]:flex [&_#reader__dashboard_section_csr]:flex-col [&_#reader__dashboard_section_csr]:gap-4
+    
+    /* 2. Primary Buttons (Permission, Start, Stop) */
+    [&_reader__dashboard_section_csr]:flex! [&_reader__dashboard_section_csr]:flex-col! [&_reader__dashboard_section_csr]:gap-4!
+    [&_button]:w-full [&_button]:rounded-2xl [&_button]:py-4 [&_button]:font-bold [&_button]:transition-all active:[&_button]:scale-95
+    [&_#html5-qrcode-button-camera-permission]:bg-[#007AFF] [&_#html5-qrcode-button-camera-permission]:text-white
+    [&_#html5-qrcode-button-camera-start]:bg-[#34C759] [&_#html5-qrcode-button-camera-start]:text-white
+    [&_#html5-qrcode-button-camera-stop]:bg-[#FF3B30] [&_#html5-qrcode-button-camera-stop]:text-white
+    
+    /* 3. Camera Dropdown (iOS Settings style) */
+    [&_select]:w-full [&_select]:bg-zinc-800 [&_select]:text-white [&_select]:rounded-xl [&_select]:p-3  
+    [&_select]:border-0 [&_select]:ring-1 [&_select]:ring-white/10 [&_select]:appearance-none [&_select]:text-sm
+    
+    /* 4. Zoom Slider */
+    [&_input[type='range']]:appearance-none [&_input[type='range']]:w-full [&_input[type='range']]:bg-zinc-700 
+    [&_input[type='range']]:h-1 [&_input[type='range']]:rounded-full [&_input[type='range']]:accent-blue-500
+    
+    /* 5. File Upload Box (Replacing the ugly dashed box) */
+    [&_div[style*='dashed']]:border-zinc-800! [&_div[style*='dashed']]:border-2! [&_div[style*='dashed']]:rounded-3xl! 
+    [&_div[style*='dashed']]:bg-zinc-900/40! [&_div[style*='dashed']]:p-6!
+    [&_#html5-qrcode-button-file-selection]:bg-zinc-700 [&_#html5-qrcode-button-file-selection]:rounded-lg
+    
+    /* 6. Text & Links */
+    [&_span]:text-zinc-500 [&_span]:text-[10px] [&_span]:uppercase [&_span]:tracking-widest
+    [&_#html5-qrcode-anchor-scan-type-change]:text-[#0A84FF] [&_#html5-qrcode-anchor-scan-type-change]:no-underline [&_#html5-qrcode-anchor-scan-type-change]:mt-6 [&_#html5-qrcode-anchor-scan-type-change]:block
+    
+    /* 7. Hide Branding */
+    [&_img]:hidden [&_#reader__status_span]:hidden"
+            ></div>
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
                 {/* Connection Widget */}
                 <StatusCard

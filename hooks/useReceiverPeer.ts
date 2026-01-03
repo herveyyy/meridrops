@@ -105,10 +105,10 @@ export const useReceiverPeer = () => {
     };
 
     useEffect(() => {
-        let customId = localStorage.getItem("aether_admin_id");
+        let customId = localStorage.getItem("admin_id_admin_id");
         if (!customId) {
             customId = `ADMIN-${generateShortId()}`;
-            localStorage.setItem("aether_admin_id", customId);
+            localStorage.setItem("admin_id_admin_id", customId);
         }
 
         const peer = new Peer(customId, { debug: 1 });
