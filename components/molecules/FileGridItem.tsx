@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, Download, Check, Lock } from "lucide-react";
+import { FileText, Download, Check, Lock, PrinterIcon } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { ReceivedFile } from "@/hooks/useReceiverPeer";
 import { formatBytes } from "@/services/utils";
@@ -11,6 +11,7 @@ interface FileGridItemProps {
     onSelect: () => void;
     onRequest: () => void;
     onDownload: () => void;
+    onPrint: () => void;
 }
 
 export const FileGridItem: React.FC<FileGridItemProps> = ({
@@ -20,6 +21,7 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
     onSelect,
     onRequest,
     onDownload,
+    onPrint,
 }) => {
     return (
         <div
@@ -85,17 +87,30 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
             {!isSelectionMode && (
                 <div className="mt-auto relative z-20">
                     {file.status === "pending" && (
-                        <Button
-                            variant="secondary"
-                            className="w-full text-xs py-2 h-8"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onRequest();
-                            }}
-                            icon={<Lock className="w-3 h-3" />}
-                        >
-                            Request Download
-                        </Button>
+                        <div className="">
+                            <Button
+                                variant="secondary"
+                                className="w-full text-xs py-2 h-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRequest();
+                                }}
+                                icon={<Lock className="w-3 h-3" />}
+                            >
+                                Request Download
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="w-full mt-2 text-xs py-2 h-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onPrint();
+                                }}
+                                icon={<PrinterIcon className="w-3 h-3" />}
+                            >
+                                Request Print
+                            </Button>
+                        </div>
                     )}
 
                     {(file.status === "requested" ||

@@ -12,6 +12,7 @@ import {
     CheckSquare,
     ClosedCaption,
     X,
+    Printer,
 } from "lucide-react";
 import { Customer, useReceiverPeer } from "../../hooks/useReceiverPeer";
 import { useZipDownloader } from "../../hooks/useZipDownloader";
@@ -21,8 +22,14 @@ import { FileGridItem } from "../molecules/FileGridItem";
 import Image from "next/image";
 
 const ReceiverView: React.FC = () => {
-    const { serverId, qrCodeUrl, customers, requestDownload, closeConnection } =
-        useReceiverPeer();
+    const {
+        serverId,
+        qrCodeUrl,
+        customers,
+        requestDownload,
+        closeConnection,
+        approveAndPrint,
+    } = useReceiverPeer();
     const { downloadSelectedZip } = useZipDownloader();
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
@@ -66,7 +73,15 @@ const ReceiverView: React.FC = () => {
             setSelectedFileIds(new Set());
         });
     };
-
+    const handlePrint = () => {
+        if (!selectedCustomer) return;
+        const pendingFiles = selectedCustomer.files.filter(
+            (f) => f.status === "complete"
+        );
+        pendingFiles.forEach((file) =>
+            approveAndPrint(file.id, selectedCustomer.peerId)
+        );
+    };
     const requestAll = () => {
         if (!selectedCustomer) return;
         const pendingFiles = selectedCustomer.files.filter(
@@ -353,6 +368,12 @@ const ReceiverView: React.FC = () => {
                                         onDownload={() =>
                                             downloadFileToDisk(file)
                                         }
+                                        onPrint={() =>
+                                            approveAndPrint(
+                                                file.fileId,
+                                                selectedCustomer.peerId
+                                            )
+                                        }
                                     />
                                 ))}
                             </div>
@@ -370,20 +391,41 @@ const ReceiverView: React.FC = () => {
                                 >
                                     Download {selectedFileIds.size} Files as Zip
                                 </Button>
+                                <Button
+                                    variant="secondary"
+                                    fullWidth
+                                    className="mt-3 py-4 shadow-xl"
+                                    onClick={handlePrint}
+                                    icon={<Printer className="w-5 h-5" />}
+                                >
+                                    Print {selectedFileIds.size} Files
+                                </Button>
                             </div>
                         )}
                     </div>
                 ) : (
                     <div className="hidden lg:flex flex-col items-center justify-center h-full text-center p-8">
                         {showQr && (
-                            <div className="bg-white p-4 rounded-2xl mb-8 animate-pop">
-                                <Image
-                                    src={qrCodeUrl || "/placeholder-qrcode.png"}
-                                    width={256}
-                                    height={256}
-                                    alt="Connect QR"
-                                    className="w-64 h-64 object-contain"
-                                />
+                            <div className=" p-4 rounded-2xl mb-8 animate-pop">
+                                {!qrCodeUrl ? (
+                                    <div className="flex h-64 w-64 items-center justify-center rounded-3xl backdrop-blur-md">
+                                        <div className="flex flex-col items-center gap-3">
+                                            {/* iOS style spinner */}
+                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-700 border-t-blue-500" />
+                                            <span className="text-xs font-medium text-zinc-500 uppercase tracking-widest">
+                                                Generating QR...
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Image
+                                        src={qrCodeUrl || ""}
+                                        width={256}
+                                        height={256}
+                                        alt="Connect QR"
+                                        className="h-64 w-64 rounded-3xl object-contain bg-white p-4 shadow-2xl"
+                                    />
+                                )}
                             </div>
                         )}
                         <h2 className="text-3xl font-bold mb-2">

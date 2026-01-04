@@ -69,7 +69,7 @@ export const useSenderPeer = (username: string) => {
             !autoConnectAttempted.current &&
             connectionStatus === "idle"
         ) {
-            const lastAdminId = localStorage.getItem("admin_id_last_admin_id");
+            const lastAdminId = localStorage.getItem("last_admin_id");
             if (lastAdminId) {
                 autoConnectAttempted.current = true;
                 setConnectionStatus("auto-connecting");
@@ -114,7 +114,7 @@ export const useSenderPeer = (username: string) => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             setConnectionStatus("connected");
             connRef.current = conn;
-            localStorage.setItem("admin_id_last_admin_id", sanitizedId);
+            localStorage.setItem("last_admin_id", sanitizedId);
 
             // Resend metadata for existing files
             if (filesRef.current.length > 0) {
@@ -125,6 +125,23 @@ export const useSenderPeer = (username: string) => {
         conn.on("data", (data: any) => {
             const msg = data as PeerMessage;
             if (msg.type === "REQUEST_DOWNLOAD") {
+                const fileId = msg.payload.fileId;
+                const file = filesRef.current.find((f) => f.id === fileId);
+                if (file) {
+                    setApprovalQueue((prev) => {
+                        if (prev.find((req) => req.fileId === file.id))
+                            return prev;
+                        return [
+                            ...prev,
+                            { fileId: file.id, fileName: file.file.name },
+                        ];
+                    });
+                }
+            }
+        });
+        conn.on("data", (data: any) => {
+            const msg = data as PeerMessage;
+            if (msg.type === "PRINT_REQUEST") {
                 const fileId = msg.payload.fileId;
                 const file = filesRef.current.find((f) => f.id === fileId);
                 if (file) {
@@ -186,7 +203,13 @@ export const useSenderPeer = (username: string) => {
         if (fileObj) startDataTransfer(fileObj, connRef.current);
         setApprovalQueue((prev) => prev.slice(1));
     };
-
+    const handleApprovePrint = () => {
+        if (approvalQueue.length === 0 || !connRef.current) return;
+        const req = approvalQueue[0];
+        const fileObj = files.find((f) => f.id === req.fileId);
+        if (fileObj) startDataTransfer(fileObj, connRef.current);
+        setApprovalQueue((prev) => prev.slice(1));
+    };
     const handleDeny = () => {
         if (approvalQueue.length === 0 || !connRef.current) return;
         const req = approvalQueue[0];

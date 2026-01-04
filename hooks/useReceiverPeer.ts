@@ -27,7 +27,9 @@ export const useReceiverPeer = () => {
     const [serverId, setServerId] = useState<string>("");
     const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
     const [customers, setCustomers] = useState<Customer[]>([]);
-
+    const [approvalQueue, setApprovalQueue] = useState<
+        { fileId: string; peerId: string; fileName: string }[]
+    >([]);
     const peerRef = useRef<Peer | null>(null);
 
     const handleData = (data: unknown, senderId: string) => {
@@ -190,5 +192,57 @@ export const useReceiverPeer = () => {
         );
     };
 
-    return { serverId, qrCodeUrl, customers, requestDownload, closeConnection };
+    const approveAndPrint = (fileId: string, peerId: string) => {
+        const customer = customers.find((c) => c.peerId === peerId);
+        const file = customer?.files.find((f) => f.fileId === fileId);
+
+        // @ts-ignore - accessing rawBlob we saved during "END"
+        if (file && (file.rawBlob || file.blobUrl)) {
+            // 1. Create print URL
+            const printUrl = file.blobUrl;
+
+            // 2. Hidden Iframe Logic
+            const printFrame = document.createElement("iframe");
+            printFrame.style.position = "fixed";
+            printFrame.style.right = "0";
+            printFrame.style.bottom = "0";
+            printFrame.style.width = "0";
+            printFrame.style.height = "0";
+            printFrame.style.border = "none";
+            printFrame.src = printUrl!;
+
+            document.body.appendChild(printFrame);
+
+            printFrame.onload = () => {
+                printFrame.contentWindow?.focus();
+                printFrame.contentWindow?.print();
+
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(printFrame);
+                }, 2000);
+            };
+
+            // 3. Notify Customer
+            customer?.conn.send({
+                type: "PRINT_STARTED",
+                payload: { fileId },
+            });
+
+            // 4. Clear from Queue
+            setApprovalQueue((prev) => prev.filter((q) => q.fileId !== fileId));
+        }
+    };
+    const rejectPrint = (fileId: string) => {
+        setApprovalQueue((prev) => prev.filter((q) => q.fileId !== fileId));
+    };
+    return {
+        serverId,
+        qrCodeUrl,
+        customers,
+        requestDownload,
+        closeConnection,
+        rejectPrint,
+        approveAndPrint,
+    };
 };
