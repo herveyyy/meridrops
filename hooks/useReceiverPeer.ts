@@ -34,10 +34,11 @@ export const useReceiverPeer = () => {
 
     const handleData = (data: unknown, senderId: string) => {
         const msg = data as PeerMessage;
+        console.log(data, "SADASDA");
+
         setCustomers((prev) => {
             const customerIndex = prev.findIndex((c) => c.peerId === senderId);
             if (customerIndex === -1) return prev;
-
             const updatedCustomers = [...prev];
             const customer = { ...updatedCustomers[customerIndex] };
 
