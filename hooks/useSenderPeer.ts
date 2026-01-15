@@ -13,6 +13,7 @@ export interface QueuedFile {
 export interface ApprovalRequest {
     fileId: string;
     fileName: string;
+    type?: "download" | "print";
 }
 
 export const useSenderPeer = (username: string) => {
@@ -133,7 +134,11 @@ export const useSenderPeer = (username: string) => {
                             return prev;
                         return [
                             ...prev,
-                            { fileId: file.id, fileName: file.file.name },
+                            {
+                                fileId: file.id,
+                                fileName: file.file.name,
+                                type: "download",
+                            },
                         ];
                     });
                 }
@@ -150,7 +155,11 @@ export const useSenderPeer = (username: string) => {
                             return prev;
                         return [
                             ...prev,
-                            { fileId: file.id, fileName: file.file.name },
+                            {
+                                fileId: file.id,
+                                fileName: file.file.name,
+                                type: "print",
+                            },
                         ];
                     });
                 }
@@ -210,6 +219,7 @@ export const useSenderPeer = (username: string) => {
         if (fileObj) startDataTransfer(fileObj, connRef.current);
         setApprovalQueue((prev) => prev.slice(1));
     };
+
     const handleDeny = () => {
         if (approvalQueue.length === 0 || !connRef.current) return;
         const req = approvalQueue[0];
@@ -291,5 +301,6 @@ export const useSenderPeer = (username: string) => {
         handleApprove,
         handleDeny,
         handleBack,
+        handleApprovePrint,
     };
 };

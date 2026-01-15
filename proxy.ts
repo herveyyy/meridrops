@@ -12,7 +12,6 @@ export async function proxy(request: NextRequest) {
 
     if (isAdminPage) {
         if (!rawToken) {
-            console.log("No token found. Redirecting to login.");
             return NextResponse.redirect(new URL("/login", request.url));
         }
 
@@ -25,13 +24,11 @@ export async function proxy(request: NextRequest) {
 
             const now = Math.floor(Date.now() / 1000);
             if (!decoded || (decoded.exp && (decoded.exp as number) < now)) {
-                console.log("Token invalid or expired.");
                 return NextResponse.redirect(
                     new URL("/login?reason=expired", request.url)
                 );
             }
 
-            console.log("Authorized access to admin:", decoded.email);
             return NextResponse.next();
         } catch (error) {
             console.error("Security Bypass Attempt or Decoding Error:", error);

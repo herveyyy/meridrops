@@ -10,7 +10,6 @@ import {
     Folder,
     DownloadCloud,
     CheckSquare,
-    ClosedCaption,
     X,
     Printer,
 } from "lucide-react";
@@ -20,6 +19,7 @@ import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
 import { FileGridItem } from "../molecules/FileGridItem";
 import Image from "next/image";
+import LogoutBTN from "../molecules/LogoutBTN";
 
 const ReceiverView: React.FC = () => {
     const {
@@ -29,6 +29,8 @@ const ReceiverView: React.FC = () => {
         requestDownload,
         closeConnection,
         approveAndPrint,
+        rejectPrint,
+        requestPrint,
     } = useReceiverPeer();
     const { downloadSelectedZip } = useZipDownloader();
 
@@ -76,12 +78,13 @@ const ReceiverView: React.FC = () => {
     const handlePrint = () => {
         if (!selectedCustomer) return;
         const pendingFiles = selectedCustomer.files.filter(
-            (f) => f.status === "complete"
+            (f) => f.status === "allow_print"
         );
         pendingFiles.forEach((file) =>
             approveAndPrint(file.id, selectedCustomer.peerId)
         );
     };
+
     const requestAll = () => {
         if (!selectedCustomer) return;
         const pendingFiles = selectedCustomer.files.filter(
@@ -90,7 +93,7 @@ const ReceiverView: React.FC = () => {
         pendingFiles.forEach((file) => requestDownload(selectedCustomer, file));
     };
 
-    const downloadFileToDisk = (file: any) => {
+    const downloadFileToDisk = (file: any, type: string) => {
         if (!file.blobUrl) return;
         const a = document.createElement("a");
         a.href = file.blobUrl;
@@ -221,6 +224,9 @@ const ReceiverView: React.FC = () => {
                             </button>
                         ))
                     )}
+                </div>
+                <div className="p-4 flex w-full">
+                    <LogoutBTN />
                 </div>
             </div>
 
@@ -366,13 +372,16 @@ const ReceiverView: React.FC = () => {
                                             )
                                         }
                                         onDownload={() =>
-                                            downloadFileToDisk(file)
+                                            downloadFileToDisk(
+                                                file,
+                                                file.meta.type
+                                            )
                                         }
                                         onPrint={() =>
-                                            approveAndPrint(
-                                                file.fileId,
-                                                selectedCustomer.peerId
-                                            )
+                                            onPrint(selectedCustomer, file)
+                                        }
+                                        requestPrint={() =>
+                                            requestPrint(selectedCustomer, file)
                                         }
                                     />
                                 ))}

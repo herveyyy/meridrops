@@ -11,6 +11,7 @@ interface FileGridItemProps {
     onSelect: () => void;
     onRequest: () => void;
     onDownload: () => void;
+    requestPrint: () => void;
     onPrint: () => void;
 }
 
@@ -21,6 +22,7 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
     onSelect,
     onRequest,
     onDownload,
+    requestPrint,
     onPrint,
 }) => {
     return (
@@ -104,7 +106,7 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
                                 className="w-full mt-2 text-xs py-2 h-8"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onPrint();
+                                    requestPrint();
                                 }}
                                 icon={<PrinterIcon className="w-3 h-3" />}
                             >
@@ -134,6 +136,19 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
                             icon={<Download className="w-3 h-3" />}
                         >
                             Save to Device
+                        </Button>
+                    )}
+                    {file.status === "allow_print" && (
+                        <Button
+                            variant="primary"
+                            className="w-full bg-primary hover:bg-primary/90 text-xs py-2 h-8"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                requestPrint();
+                            }}
+                            icon={<PrinterIcon className="w-3 h-3" />}
+                        >
+                            Print File
                         </Button>
                     )}
 
