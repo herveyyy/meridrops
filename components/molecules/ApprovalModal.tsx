@@ -5,14 +5,13 @@ interface Props {
     approvalQueue: { fileName: string }[];
     handleApprove: () => void;
     handleDeny: () => void;
-    approvalType: "download" | "print";
+    approvalType: "download";
 }
 
 const ApprovalModal: React.FC<Props> = ({
     approvalQueue,
     handleApprove,
     handleDeny,
-    approvalType,
 }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-pop">
@@ -23,14 +22,10 @@ const ApprovalModal: React.FC<Props> = ({
                     </div>
                 </div>
                 <h3 className="text-xl font-bold text-center mb-2">
-                    {`Allow ${
-                        approvalType === "print" ? "Print" : "Download"
-                    }?`}
+                    {`Allow admin access?`}
                 </h3>
                 <p className="text-gray-400 text-center text-sm mb-6">
-                    {`The Admin wants to ${
-                        approvalType === "print" ? "print" : "download"
-                    } the file `}
+                    {`The Admin wants to access the file `}
                     <span className="text-white font-medium">
                         "{approvalQueue[0].fileName}"
                     </span>

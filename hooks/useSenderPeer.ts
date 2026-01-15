@@ -13,7 +13,7 @@ export interface QueuedFile {
 export interface ApprovalRequest {
     fileId: string;
     fileName: string;
-    type?: "download" | "print";
+    type?: "download";
 }
 
 export const useSenderPeer = (username: string) => {
@@ -144,27 +144,6 @@ export const useSenderPeer = (username: string) => {
                 }
             }
         });
-        conn.on("data", (data: any) => {
-            const msg = data as PeerMessage;
-            if (msg.type === "PRINT_REQUEST") {
-                const fileId = msg.payload.fileId;
-                const file = filesRef.current.find((f) => f.id === fileId);
-                if (file) {
-                    setApprovalQueue((prev) => {
-                        if (prev.find((req) => req.fileId === file.id))
-                            return prev;
-                        return [
-                            ...prev,
-                            {
-                                fileId: file.id,
-                                fileName: file.file.name,
-                                type: "print",
-                            },
-                        ];
-                    });
-                }
-            }
-        });
 
         conn.on("close", () => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -206,13 +185,6 @@ export const useSenderPeer = (username: string) => {
     };
 
     const handleApprove = () => {
-        if (approvalQueue.length === 0 || !connRef.current) return;
-        const req = approvalQueue[0];
-        const fileObj = files.find((f) => f.id === req.fileId);
-        if (fileObj) startDataTransfer(fileObj, connRef.current);
-        setApprovalQueue((prev) => prev.slice(1));
-    };
-    const handleApprovePrint = () => {
         if (approvalQueue.length === 0 || !connRef.current) return;
         const req = approvalQueue[0];
         const fileObj = files.find((f) => f.id === req.fileId);
@@ -301,6 +273,5 @@ export const useSenderPeer = (username: string) => {
         handleApprove,
         handleDeny,
         handleBack,
-        handleApprovePrint,
     };
 };

@@ -5,13 +5,8 @@ export enum AppMode {
 }
 
 export interface PeerMessage {
-    type:
-        | "META"
-        | "CHUNK"
-        | "END"
-        | "REQUEST_DOWNLOAD"
-        | "DENY_DOWNLOAD"
-        | "PRINT_REQUEST";
+    type: "META" | "CHUNK" | "END" | "REQUEST_DOWNLOAD" | "DENY_DOWNLOAD";
+
     payload?: any;
 }
 

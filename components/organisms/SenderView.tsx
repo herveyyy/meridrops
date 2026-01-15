@@ -272,9 +272,7 @@ const SenderView: React.FC = () => {
                     approvalQueue={approvalQueue}
                     handleApprove={handleApprove}
                     handleDeny={handleDeny}
-                    approvalType={
-                        approvalQueue[0].type === "print" ? "print" : "download"
-                    }
+                    approvalType={approvalQueue[0].type || "download"}
                 />
             )}
         </div>

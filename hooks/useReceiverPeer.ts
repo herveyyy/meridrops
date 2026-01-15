@@ -11,13 +11,8 @@ export interface ReceivedFile {
     chunks: ArrayBuffer[];
     totalBytesReceived: number;
     progress: number;
-    status:
-        | "pending"
-        | "requested"
-        | "transferring"
-        | "complete"
-        | "denied"
-        | "allow_print";
+    status: "pending" | "requested" | "transferring" | "complete" | "denied";
+
     blobUrl?: string;
 }
 
@@ -183,39 +178,7 @@ export const useReceiverPeer = () => {
         peerRef.current = peer;
         return () => peer.destroy();
     }, []);
-    /**
-     * Triggers a silent/hidden print job for a given URL (Blob or External)
-     */
-    const onPrint = (url: string): Promise<void> => {
-        return new Promise((resolve) => {
-            const printFrame = document.createElement("iframe");
 
-            // Hide the iframe from view
-            Object.assign(printFrame.style, {
-                position: "fixed",
-                right: "0",
-                bottom: "0",
-                width: "0",
-                height: "0",
-                border: "none",
-            });
-
-            printFrame.src = url;
-            document.body.appendChild(printFrame);
-
-            printFrame.onload = () => {
-                printFrame.contentWindow?.focus();
-                printFrame.contentWindow?.print();
-
-                // Cleanup: remove the iframe after the dialog closes
-                // 2 seconds is usually enough for the browser to hand off to the OS
-                setTimeout(() => {
-                    document.body.removeChild(printFrame);
-                    resolve();
-                }, 2000);
-            };
-        });
-    };
     const requestDownload = (customer: Customer, file: ReceivedFile) => {
         if (file.status !== "pending" && file.status !== "denied") return;
         customer.conn.send({
@@ -239,96 +202,11 @@ export const useReceiverPeer = () => {
         );
     };
 
-    const approveAndPrint = (fileId: string, peerId: string) => {
-        const customer = customers.find((c) => c.peerId === peerId);
-        const file = customer?.files.find((f) => f.fileId === fileId);
-
-        // @ts-ignore - accessing rawBlob we saved during "END"
-        if (file && (file.rawBlob || file.blobUrl)) {
-            // 1. Create print URL
-            const printUrl = file.blobUrl;
-
-            // 2. Hidden Iframe Logic
-            const printFrame = document.createElement("iframe");
-            printFrame.style.position = "fixed";
-            printFrame.style.right = "0";
-            printFrame.style.bottom = "0";
-            printFrame.style.width = "0";
-            printFrame.style.height = "0";
-            printFrame.style.border = "none";
-            printFrame.src = printUrl!;
-
-            document.body.appendChild(printFrame);
-
-            printFrame.onload = () => {
-                printFrame.contentWindow?.focus();
-                printFrame.contentWindow?.print();
-
-                // Cleanup
-                setTimeout(() => {
-                    document.body.removeChild(printFrame);
-                }, 2000);
-            };
-
-            // 3. Notify Customer
-            customer?.conn.send({
-                type: "PRINT_STARTED",
-                payload: { fileId },
-            });
-
-            // 4. Clear from Queue
-            setApprovalQueue((prev) => prev.filter((q) => q.fileId !== fileId));
-        }
-    };
-    const rejectPrint = (fileId: string) => {
-        setApprovalQueue((prev) => prev.filter((q) => q.fileId !== fileId));
-    };
-    const requestPrint = async (customer: Customer, file: ReceivedFile) => {
-        // 1. Guard clause
-        if (file.status !== "pending" && file.status !== "denied") return;
-
-        // 2. Immediate Print Check
-        // If we already have the blob, we can skip the request and print now
-        if (file.blobUrl || (file as any).rawBlob) {
-            const source = file.blobUrl || (file as any).rawBlob;
-            await onPrint(source);
-
-            // Optional: Notify customer that printing started immediately
-            customer.conn.send({
-                type: "PRINT_STARTED",
-                payload: { fileId: file.fileId },
-            });
-        } else {
-            // 3. Request logic (if data isn't present yet)
-            customer.conn.send({
-                type: "PRINT_REQUEST",
-                payload: { fileId: file.fileId },
-            });
-        }
-
-        // 4. Update local state
-        setCustomers((prev) => {
-            const cIdx = prev.findIndex((c) => c.peerId === customer.peerId);
-            if (cIdx === -1) return prev;
-
-            const updatedCustomer = { ...prev[cIdx] };
-            updatedCustomer.files = updatedCustomer.files.map((f) =>
-                f.fileId === file.fileId ? { ...f, status: "requested" } : f
-            );
-
-            const newCustomers = [...prev];
-            newCustomers[cIdx] = updatedCustomer;
-            return newCustomers;
-        });
-    };
     return {
         serverId,
         qrCodeUrl,
         customers,
         requestDownload,
-        requestPrint,
         closeConnection,
-        rejectPrint,
-        approveAndPrint,
     };
 };

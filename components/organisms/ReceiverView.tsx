@@ -22,16 +22,8 @@ import Image from "next/image";
 import LogoutBTN from "../molecules/LogoutBTN";
 
 const ReceiverView: React.FC = () => {
-    const {
-        serverId,
-        qrCodeUrl,
-        customers,
-        requestDownload,
-        closeConnection,
-        approveAndPrint,
-        rejectPrint,
-        requestPrint,
-    } = useReceiverPeer();
+    const { serverId, qrCodeUrl, customers, requestDownload, closeConnection } =
+        useReceiverPeer();
     const { downloadSelectedZip } = useZipDownloader();
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
@@ -74,15 +66,6 @@ const ReceiverView: React.FC = () => {
             setIsSelectionMode(false);
             setSelectedFileIds(new Set());
         });
-    };
-    const handlePrint = () => {
-        if (!selectedCustomer) return;
-        const pendingFiles = selectedCustomer.files.filter(
-            (f) => f.status === "allow_print"
-        );
-        pendingFiles.forEach((file) =>
-            approveAndPrint(file.id, selectedCustomer.peerId)
-        );
     };
 
     const requestAll = () => {
@@ -377,12 +360,6 @@ const ReceiverView: React.FC = () => {
                                                 file.meta.type
                                             )
                                         }
-                                        onPrint={() =>
-                                            onPrint(selectedCustomer, file)
-                                        }
-                                        requestPrint={() =>
-                                            requestPrint(selectedCustomer, file)
-                                        }
                                     />
                                 ))}
                             </div>
@@ -399,15 +376,6 @@ const ReceiverView: React.FC = () => {
                                     icon={<Folder className="w-5 h-5" />}
                                 >
                                     Download {selectedFileIds.size} Files as Zip
-                                </Button>
-                                <Button
-                                    variant="secondary"
-                                    fullWidth
-                                    className="mt-3 py-4 shadow-xl"
-                                    onClick={handlePrint}
-                                    icon={<Printer className="w-5 h-5" />}
-                                >
-                                    Print {selectedFileIds.size} Files
                                 </Button>
                             </div>
                         )}
