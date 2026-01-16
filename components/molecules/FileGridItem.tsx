@@ -2,7 +2,7 @@ import React from "react";
 import { FileText, Download, Check, Lock, PrinterIcon } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { ReceivedFile } from "@/hooks/useReceiverPeer";
-import { formatBytes } from "@/services/utils";
+import { formatBytes, printPdf } from "@/services/utils";
 
 interface FileGridItemProps {
     file: ReceivedFile;
@@ -21,6 +21,7 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
     onRequest,
     onDownload,
 }) => {
+    const isPdf = file.meta.type === "application/pdf";
     return (
         <div
             onClick={() =>
@@ -111,17 +112,43 @@ export const FileGridItem: React.FC<FileGridItemProps> = ({
                     )}
 
                     {file.status === "complete" && (
-                        <Button
-                            variant="primary"
-                            className="w-full bg-success hover:bg-success/90 text-xs py-2 h-8"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onDownload();
-                            }}
-                            icon={<Download className="w-3 h-3" />}
-                        >
-                            Save to Device
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                            {/* NEW: Print Button specifically for PDFs */}
+                            {isPdf && (
+                                <Button
+                                    variant="primary"
+                                    className="w-full bg-blue-600 hover:bg-blue-500 text-xs py-2 h-8"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        console.log("first", file);
+                                        if (file.blobUrl) {
+                                            window
+                                                .open(
+                                                    file.blobUrl,
+                                                    "PRINT",
+                                                    "width=800,height=600"
+                                                )
+                                                ?.print();
+                                        }
+                                    }}
+                                    icon={<PrinterIcon className="w-3 h-3" />}
+                                >
+                                    Print PDF
+                                </Button>
+                            )}
+
+                            <Button
+                                variant="primary"
+                                className="w-full bg-success hover:bg-success/90 text-xs py-2 h-8"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDownload();
+                                }}
+                                icon={<Download className="w-3 h-3" />}
+                            >
+                                Save to Device
+                            </Button>
+                        </div>
                     )}
 
                     {file.status === "denied" && (

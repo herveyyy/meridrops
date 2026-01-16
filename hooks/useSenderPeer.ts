@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { Peer, DataConnection } from "peerjs";
+import Peer, { DataConnection } from "peerjs";
 import { generateShortId } from "../services/utils";
 import { FileMeta, PeerMessage } from "../services/types";
+import { useRouter } from "next/navigation";
 
 export interface QueuedFile {
     id: string;
@@ -16,9 +17,11 @@ export interface ApprovalRequest {
     type?: "download";
 }
 
+export const CHUNK_SIZE = 64 * 1024; // 64 KB
+
 export const useSenderPeer = (username: string) => {
-    const [peerId, setPeerId] = useState<string>("");
-    const [adminId, setAdminId] = useState<string>("");
+    const [peerId, setPeerId] = useState("");
+    const [adminId, setAdminId] = useState("");
     const [connectionStatus, setConnectionStatus] = useState<
         "idle" | "scanning" | "connecting" | "connected" | "auto-connecting"
     >("idle");
@@ -30,128 +33,87 @@ export const useSenderPeer = (username: string) => {
     const connRef = useRef<DataConnection | null>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const autoConnectAttempted = useRef(false);
-
+    const router = useRouter();
     useEffect(() => {
         filesRef.current = files;
     }, [files]);
 
-    // Initialize Peer
+    // ---------- INIT PEER ----------
     useEffect(() => {
         const peer = new Peer({ debug: 1 });
 
         peer.on("open", (id) => setPeerId(id));
         peer.on("error", (err) => {
-            console.error("Peer Error:", err);
-            setConnectionStatus((prev) => {
-                if (prev === "auto-connecting") return "idle";
-                return prev === "connected" ? "connected" : "idle";
-            });
-            const errorType = (err as any).type;
-            if (
-                errorType === "peer-unavailable" &&
-                connectionStatus !== "auto-connecting"
-            ) {
-                alert("Server not found. Please check the ID.");
-            }
+            console.error(err);
+            setConnectionStatus("idle");
         });
 
         peerRef.current = peer;
-        return () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            peer.destroy();
-        };
+        return () => peer.destroy();
     }, []);
 
-    // Auto Connect Logic
+    // ---------- AUTO CONNECT ----------
     useEffect(() => {
-        if (
-            username &&
-            peerId &&
-            !autoConnectAttempted.current &&
-            connectionStatus === "idle"
-        ) {
+        if (username && peerId && !autoConnectAttempted.current) {
             const lastAdminId = localStorage.getItem("last_admin_id");
             if (lastAdminId) {
                 autoConnectAttempted.current = true;
-                setConnectionStatus("auto-connecting");
                 connectToAdmin(lastAdminId, true);
             }
         }
     }, [username, peerId]);
 
-    const connectToAdmin = (targetId: string, isAuto: boolean = false) => {
+    // ---------- CONNECT ----------
+    const connectToAdmin = (targetId: string, isAuto = false) => {
         if (!peerRef.current) return;
-        const sanitizedId = targetId.trim().toUpperCase();
 
-        if (!sanitizedId) {
-            if (!isAuto) alert("Invalid ID");
-            return;
-        }
-
-        if (!isAuto) setConnectionStatus("connecting");
-        setAdminId(sanitizedId);
-
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(
-            () => {
-                setConnectionStatus((prev) => {
-                    if (prev === "connecting" || prev === "auto-connecting") {
-                        if (!isAuto) alert("Connection timed out.");
-                        return "idle";
-                    }
-                    return prev;
-                });
-                if (connRef.current) connRef.current.close();
-            },
-            isAuto ? 5000 : 60000
-        );
-
-        const conn = peerRef.current.connect(sanitizedId, {
+        const conn = peerRef.current.connect(targetId.trim().toUpperCase(), {
             reliable: true,
             metadata: { username },
         });
 
+        setConnectionStatus(isAuto ? "auto-connecting" : "connecting");
+        setAdminId(targetId);
+
         conn.on("open", () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
             setConnectionStatus("connected");
             connRef.current = conn;
-            localStorage.setItem("last_admin_id", sanitizedId);
+            localStorage.setItem("last_admin_id", targetId);
 
-            // Resend metadata for existing files
-            if (filesRef.current.length > 0) {
-                filesRef.current.forEach((f) => sendMetadata(f, conn));
-            }
+            filesRef.current.forEach((f) => sendMetadata(f, conn));
         });
 
-        conn.on("data", (data: any) => {
+        conn.on("data", (data) => {
             const msg = data as PeerMessage;
+
             if (msg.type === "REQUEST_DOWNLOAD") {
-                const fileId = msg.payload.fileId;
-                const file = filesRef.current.find((f) => f.id === fileId);
-                if (file) {
-                    setApprovalQueue((prev) => {
-                        if (prev.find((req) => req.fileId === file.id))
-                            return prev;
-                        return [
-                            ...prev,
-                            {
-                                fileId: file.id,
-                                fileName: file.file.name,
-                                type: "download",
-                            },
-                        ];
-                    });
-                }
+                const file = filesRef.current.find(
+                    (f) => f.id === msg.payload.fileId
+                );
+                if (!file) return;
+
+                setApprovalQueue((prev) =>
+                    prev.find((r) => r.fileId === file.id)
+                        ? prev
+                        : [
+                              ...prev,
+                              {
+                                  fileId: file.id,
+                                  fileName: file.file.name,
+                                  type: "download",
+                              },
+                          ]
+                );
             }
         });
 
         conn.on("close", () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
             setConnectionStatus("idle");
-            alert("Disconnected from Admin Server");
+            connRef.current = null;
         });
     };
 
+    // ---------- FILE ADD ----------
     const addFiles = (fileList: FileList) => {
         const newFiles: QueuedFile[] = Array.from(fileList).map((file) => ({
             id: generateShortId(),
@@ -162,11 +124,12 @@ export const useSenderPeer = (username: string) => {
 
         setFiles((prev) => [...prev, ...newFiles]);
 
-        if (connRef.current && connectionStatus === "connected") {
+        if (connRef.current) {
             newFiles.forEach((f) => sendMetadata(f, connRef.current!));
         }
     };
 
+    // ---------- SEND META ----------
     const sendMetadata = (fileObj: QueuedFile, conn: DataConnection) => {
         const meta: FileMeta = {
             id: fileObj.id,
@@ -174,91 +137,104 @@ export const useSenderPeer = (username: string) => {
             size: fileObj.file.size,
             type: fileObj.file.type,
         };
+
         conn.send({ type: "META", payload: meta });
+
+        setFiles((prev) =>
+            prev.map((f) =>
+                f.id === fileObj.id ? { ...f, status: "meta-sent" } : f
+            )
+        );
+    };
+
+    // ---------- APPROVAL ----------
+    const handleApprove = async () => {
+        if (!connRef.current || approvalQueue.length === 0) return;
+        const req = approvalQueue[0];
+        const file = filesRef.current.find((f) => f.id === req.fileId);
+        if (file) await startDataTransfer(file, connRef.current);
+        setApprovalQueue((prev) => prev.slice(1));
+    };
+
+    const handleDeny = () => {
+        if (!connRef.current || approvalQueue.length === 0) return;
+        connRef.current.send({
+            type: "DENY_DOWNLOAD",
+            payload: { fileId: approvalQueue[0].fileId },
+        });
+        setApprovalQueue((prev) => prev.slice(1));
+    };
+
+    // ---------- SEND FILE ----------
+    const startDataTransfer = async (
+        fileObj: QueuedFile,
+        conn: DataConnection
+    ) => {
+        if (!conn.open) return;
+
         setFiles((prev) =>
             prev.map((f) =>
                 f.id === fileObj.id
-                    ? { ...f, status: "meta-sent", progress: 0 }
+                    ? { ...f, status: "transferring", progress: 0 }
+                    : f
+            )
+        );
+
+        const getBufferedAmount = () => (conn as any)?._dc?.bufferedAmount ?? 0;
+
+        let offset = 0;
+
+        while (offset < fileObj.file.size) {
+            while (getBufferedAmount() > 512 * 1024) {
+                await new Promise((r) => setTimeout(r, 10));
+            }
+
+            const slice = fileObj.file.slice(offset, offset + CHUNK_SIZE);
+            const buffer = await slice.arrayBuffer();
+
+            conn.send({
+                type: "CHUNK",
+                payload: {
+                    fileId: fileObj.id,
+                    chunk: buffer,
+                },
+            });
+
+            offset += CHUNK_SIZE;
+
+            setFiles((prev) =>
+                prev.map((f) =>
+                    f.id === fileObj.id
+                        ? {
+                              ...f,
+                              progress: Math.round(
+                                  (offset / fileObj.file.size) * 100
+                              ),
+                          }
+                        : f
+                )
+            );
+        }
+
+        conn.send({
+            type: "END",
+            payload: { fileId: fileObj.id },
+        });
+
+        setFiles((prev) =>
+            prev.map((f) =>
+                f.id === fileObj.id
+                    ? { ...f, status: "sent", progress: 100 }
                     : f
             )
         );
     };
 
-    const handleApprove = () => {
-        if (approvalQueue.length === 0 || !connRef.current) return;
-        const req = approvalQueue[0];
-        const fileObj = files.find((f) => f.id === req.fileId);
-        if (fileObj) startDataTransfer(fileObj, connRef.current);
-        setApprovalQueue((prev) => prev.slice(1));
-    };
-
-    const handleDeny = () => {
-        if (approvalQueue.length === 0 || !connRef.current) return;
-        const req = approvalQueue[0];
-        connRef.current.send({
-            type: "DENY_DOWNLOAD",
-            payload: { fileId: req.fileId },
-        });
-        setApprovalQueue((prev) => prev.slice(1));
-    };
-
-    const startDataTransfer = (fileObj: QueuedFile, conn: DataConnection) => {
-        const { file, id } = fileObj;
-        setFiles((prev) =>
-            prev.map((f) =>
-                f.id === id ? { ...f, status: "transferring", progress: 0 } : f
-            )
-        );
-
-        const chunkSize = 16 * 1024;
-        const reader = new FileReader();
-        let offset = 0;
-
-        reader.onload = (e) => {
-            if (e.target?.result) {
-                conn.send({ type: "CHUNK", payload: e.target.result });
-                offset += chunkSize;
-                const progress = Math.min(
-                    100,
-                    Math.round((offset / file.size) * 100)
-                );
-
-                setFiles((prev) =>
-                    prev.map((f) => (f.id === id ? { ...f, progress } : f))
-                );
-
-                if (offset < file.size) {
-                    readSlice(offset);
-                } else {
-                    conn.send({ type: "END" });
-                    setFiles((prev) =>
-                        prev.map((f) =>
-                            f.id === id
-                                ? { ...f, status: "sent", progress: 100 }
-                                : f
-                        )
-                    );
-                }
-            }
-        };
-
-        const readSlice = (o: number) => {
-            const slice = file.slice(o, o + chunkSize);
-            reader.readAsArrayBuffer(slice);
-        };
-
-        readSlice(0);
-    };
-
     const disconnect = () => {
-        if (connRef.current) connRef.current.close();
+        connRef.current?.close();
         setConnectionStatus("idle");
     };
-    const handleBack = () => {
-        if (connRef.current) connRef.current.close();
-        localStorage.clear();
-        window.location.reload();
-    };
+
     return {
         peerId,
         adminId,
@@ -272,6 +248,5 @@ export const useSenderPeer = (username: string) => {
         approvalQueue,
         handleApprove,
         handleDeny,
-        handleBack,
     };
 };

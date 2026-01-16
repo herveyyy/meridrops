@@ -5,8 +5,13 @@ import {
     Plus,
     CheckCircle2,
     File as FileIcon,
-    ShieldCheck,
     User,
+    Printer,
+    Shirt,
+    Coffee,
+    Image as ImageIcon,
+    FrameIcon,
+    HelpCircleIcon,
 } from "lucide-react";
 import { useSenderPeer } from "@/hooks/useSenderPeer";
 import { formatBytes } from "@/services/utils";
@@ -15,16 +20,73 @@ import { Input } from "../atoms/Input";
 import { Header } from "../molecules/Header";
 import { StatusCard } from "./StatusCard";
 import ApprovalModal from "../molecules/ApprovalModal";
-
+const servicesEnabledList = {
+    document:
+        process.env.NEXT_PUBLIC_PRINT_SERVICE_DOCUMENT === "true"
+            ? true
+            : false,
+    photo:
+        process.env.NEXT_PUBLIC_PRINT_SERVICE_PHOTO === "true" ? true : false,
+    idCard:
+        process.env.NEXT_PUBLIC_PRINT_SERVICE_ID_CARD === "true" ? true : false,
+    poster:
+        process.env.NEXT_PUBLIC_PRINT_SERVICE_POSTER === "true" ? true : false,
+};
 const SenderView: React.FC = () => {
+    // New state to manage the flow: 'identity' -> 'services' -> 'dashboard'
+    const [viewStep, setViewStep] = useState<
+        "identity" | "services" | "dashboard"
+    >("identity");
     const [username, setUsername] = useState<string>("");
     const [inputName, setInputName] = useState("");
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
+    const availableServices = [
+        {
+            id: "docs",
+            name: "Documents",
+            icon: <Printer size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_DOCUMENT === "true",
+        },
+        {
+            id: "shirt",
+            name: "Shirt Print",
+            icon: <Shirt size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_SHIRT === "true",
+        },
+        {
+            id: "mug",
+            name: "Mug Print",
+            icon: <Coffee size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_MUG === "true",
+        },
+        {
+            id: "tarp",
+            name: "Tarp",
+            icon: <FrameIcon size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_POSTER === "true",
+        },
+        {
+            id: "photo",
+            name: "Photo Print",
+            icon: <ImageIcon size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_PHOTO === "true",
+        },
+        {
+            id: "card",
+            name: "ID Card",
+            icon: <User size={32} />,
+            enable: process.env.NEXT_PUBLIC_PRINT_SERVICE_ID_CARD === "true",
+        },
+    ];
+    const enabledServices = availableServices.filter(
+        (service) => service.enable === true
+    );
 
-    // Load username from localStorage on mount
     useEffect(() => {
         const savedUsername = localStorage.getItem("username");
         if (savedUsername) {
             setUsername(savedUsername);
+            setViewStep("services"); // Skip name if already saved
         }
     }, []);
 
@@ -40,30 +102,7 @@ const SenderView: React.FC = () => {
         approvalQueue,
         handleApprove,
         handleDeny,
-        handleBack,
     } = useSenderPeer(username);
-
-    // Scanner Effect
-    useEffect(() => {
-        let scanner: any;
-        if (connectionStatus === "scanning") {
-            scanner = new Html5QrcodeScanner(
-                "reader",
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                false
-            );
-            scanner.render(
-                (decodedText: string) => {
-                    connectToAdmin(decodedText);
-                    scanner.clear();
-                },
-                (error: any) => {}
-            );
-        }
-        return () => {
-            if (scanner) scanner.clear().catch(console.error);
-        };
-    }, [connectionStatus]);
 
     const handleNameSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,6 +110,28 @@ const SenderView: React.FC = () => {
         if (name) {
             localStorage.setItem("username", name);
             setUsername(name);
+            setViewStep("services");
+        }
+    };
+
+    const toggleService = (name: string) => {
+        setSelectedServices((prev) =>
+            prev.includes(name)
+                ? prev.filter((s) => s !== name)
+                : [...prev, name]
+        );
+    };
+
+    const handleBack = () => {
+        if (viewStep === "dashboard") {
+            setViewStep("services");
+        } else {
+            disconnect();
+            setAdminId("");
+            setUsername("");
+            setInputName("");
+            localStorage.clear();
+            setViewStep("identity");
         }
     };
 
@@ -79,21 +140,19 @@ const SenderView: React.FC = () => {
     };
 
     // 1. Identity Step
-    if (!username) {
+    if (viewStep === "identity") {
         return (
             <div className="flex flex-col h-full bg-black text-white p-6">
-                <Header title="" onBack={handleBack} />
                 <div className="flex-1 flex flex-col justify-center max-w-sm mx-auto w-full animate-pop">
                     <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-6 mx-auto">
                         <User className="w-8 h-8 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-bold text-center mb-2">
+                    <h2 className="text-2xl font-bold text-center mb-2 tracking-tight">
                         What's your name?
                     </h2>
                     <p className="text-gray-400 text-center text-sm mb-8">
                         This helps the Admin identify your device.
                     </p>
-
                     <form onSubmit={handleNameSubmit} className="space-y-4">
                         <Input
                             value={inputName}
@@ -115,50 +174,88 @@ const SenderView: React.FC = () => {
         );
     }
 
-    // 2. Main Dashboard
+    // 2. Services Selection Step (Mechanical Keyboard Style)
+    if (viewStep === "services") {
+        return (
+            <div className="flex flex-col h-full bg-black text-white p-6">
+                <Header
+                    title="Print Services"
+                    subtitle="Select what you need"
+                    onBack={handleBack}
+                />
+
+                <div className="flex-1 flex flex-col justify-center  max-w-sm mx-auto w-full animate-slide-up">
+                    <div className="grid grid-cols-2 gap-6">
+                        {enabledServices.map((service) => {
+                            const isSelected = selectedServices.includes(
+                                service.name
+                            );
+                            return (
+                                <button
+                                    key={service.id}
+                                    onClick={() => toggleService(service.name)}
+                                    className={`
+                                        relative flex flex-col items-center justify-center aspect-video rounded-3xl transition-all duration-150
+                                        ${
+                                            isSelected
+                                                ? "bg-zinc-900 border-t-2 border-primary/40 translate-y-1 shadow-[0_2px_0_0_#000,0_0_20px_rgba(59,130,246,0.3)]"
+                                                : "bg-surface border-t-2 border-white/10 shadow-[0_8px_0_0_#000,0_12px_20px_rgba(0,0,0,0.5)] active:translate-y-1 active:shadow-[0_2px_0_0_#000]"
+                                        }
+                                    `}
+                                >
+                                    <div
+                                        className={`mb-3 transition-all duration-300 ${
+                                            isSelected
+                                                ? "text-primary drop-shadow-[0_0_10px_rgba(59,130,246,0.8)] scale-110"
+                                                : "text-gray-600"
+                                        }`}
+                                    >
+                                        {service.icon}
+                                    </div>
+                                    <span
+                                        className={`text-[10px] font-black uppercase tracking-widest ${
+                                            isSelected
+                                                ? "text-primary"
+                                                : "text-gray-600"
+                                        }`}
+                                    >
+                                        {service.name}
+                                    </span>
+                                    {/* Key Surface Detail */}
+                                    <div className="absolute inset-x-5 top-2 h-[1.5px] bg-white/5 rounded-full" />
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <Button
+                        onClick={() => setViewStep("dashboard")}
+                        disabled={selectedServices.length === 0}
+                        fullWidth
+                        className="mt-12 h-14 bg-primary shadow-[0_4px_0_#1e40af] active:translate-y-1 active:shadow-none font-bold"
+                    >
+                        CONFIRM SELECTION
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // 3. Main Dashboard
     return (
-        <div className="flex flex-col h-full  bg-black text-white relative">
+        <div className="flex flex-col h-full bg-black text-white relative">
             <Header
                 title="Send to Server"
-                subtitle={`Logged in as ${username}`}
+                subtitle={`Services: ${selectedServices.join(", ")}`}
                 onBack={handleBack}
             />
-            <div
-                id="reader"
-                className="mx-auto w-full max-w-sm overflow-hidden rounded-[2.5rem] border-0!  p-8 shadow-2xl backdrop-blur-xl
-    /* 1. Dashboard Layout - Stacks everything vertically */
-    [&_#reader__dashboard_section]:p-0! [&_#reader__dashboard_section]:text-center!
-    [&_#reader__dashboard_section_csr]:flex [&_#reader__dashboard_section_csr]:flex-col [&_#reader__dashboard_section_csr]:gap-4
-    
-    /* 2. Primary Buttons (Permission, Start, Stop) */
-    [&_reader__dashboard_section_csr]:flex! [&_reader__dashboard_section_csr]:flex-col! [&_reader__dashboard_section_csr]:gap-4!
-    [&_button]:w-full [&_button]:rounded-2xl [&_button]:py-4 [&_button]:font-bold [&_button]:transition-all active:[&_button]:scale-95
-    [&_#html5-qrcode-button-camera-permission]:bg-[#007AFF] [&_#html5-qrcode-button-camera-permission]:text-white
-    [&_#html5-qrcode-button-camera-start]:bg-[#34C759] [&_#html5-qrcode-button-camera-start]:text-white
-    [&_#html5-qrcode-button-camera-stop]:bg-[#FF3B30] [&_#html5-qrcode-button-camera-stop]:text-white
-    
-    /* 3. Camera Dropdown (iOS Settings style) */
-    [&_select]:w-full [&_select]:bg-zinc-800 [&_select]:text-white [&_select]:rounded-xl [&_select]:p-3  
-    [&_select]:border-0 [&_select]:ring-1 [&_select]:ring-white/10 [&_select]:appearance-none [&_select]:text-sm
-    
-    /* 4. Zoom Slider */
-    [&_input[type='range']]:appearance-none [&_input[type='range']]:w-full [&_input[type='range']]:bg-zinc-700 
-    [&_input[type='range']]:h-1 [&_input[type='range']]:rounded-full [&_input[type='range']]:accent-blue-500
-    
-    /* 5. File Upload Box (Replacing the ugly dashed box) */
-    [&_div[style*='dashed']]:border-zinc-800! [&_div[style*='dashed']]:border-2! [&_div[style*='dashed']]:rounded-3xl! 
-    [&_div[style*='dashed']]:bg-zinc-900/40! [&_div[style*='dashed']]:p-6!
-    [&_#html5-qrcode-button-file-selection]:bg-zinc-700 [&_#html5-qrcode-button-file-selection]:rounded-lg
-    
-    /* 6. Text & Links */
-    [&_span]:text-zinc-500 [&_span]:text-[10px] [&_span]:uppercase [&_span]:tracking-widest
-    [&_#html5-qrcode-anchor-scan-type-change]:text-[#0A84FF] [&_#html5-qrcode-anchor-scan-type-change]:no-underline [&_#html5-qrcode-anchor-scan-type-change]:mt-6 [&_#html5-qrcode-anchor-scan-type-change]:block
-    
-    /* 7. Hide Branding */
-    [&_img]:hidden [&_#reader__status_span]:hidden"
-            ></div>
+            {/* The rest of your existing Dashboard code (Scanner, StatusCard, File List) */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {/* Connection Widget */}
+                {/* ID Reader Container */}
+                <div
+                    id="reader"
+                    className="mx-auto w-full max-w-sm overflow-hidden rounded-[2.5rem] border-0! p-8 shadow-2xl backdrop-blur-xl [&_img]:hidden [&_#reader__status_span]:hidden"
+                ></div>
+
                 <StatusCard
                     status={connectionStatus}
                     adminId={adminId}
@@ -169,7 +266,6 @@ const SenderView: React.FC = () => {
                     onDisconnect={disconnect}
                 />
 
-                {/* Upload Interface */}
                 {connectionStatus === "connected" && (
                     <div className="animate-slide-up space-y-6">
                         <div className="relative group">
@@ -192,14 +288,11 @@ const SenderView: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* File List */}
                         {files.length > 0 && (
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between px-1">
-                                    <h3 className="text-sm font-semibold text-gray-400">
-                                        Transfers ({files.length})
-                                    </h3>
-                                </div>
+                                <h3 className="text-sm font-semibold text-gray-400 px-1">
+                                    Transfers ({files.length})
+                                </h3>
                                 {files.map((f, i) => (
                                     <div
                                         key={f.id}
@@ -241,22 +334,6 @@ const SenderView: React.FC = () => {
                                                         width: `${f.progress}%`,
                                                     }}
                                                 ></div>
-                                            </div>
-                                            <div className="flex justify-between mt-1">
-                                                <span className="text-[10px] text-gray-500 capitalize">
-                                                    {f.status === "meta-sent"
-                                                        ? "Available to Admin"
-                                                        : f.status.replace(
-                                                              "-",
-                                                              " "
-                                                          )}
-                                                </span>
-                                                {f.status ===
-                                                    "transferring" && (
-                                                    <span className="text-[10px] text-primary">
-                                                        {f.progress}%
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
