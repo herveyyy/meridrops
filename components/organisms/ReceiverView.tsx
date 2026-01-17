@@ -419,12 +419,14 @@ const ReceiverView: React.FC = () => {
                         </p>
                     </div>
                 )}
-                <div className="fixed inset-0 z-100 bg-black">
-                    <Cashiering
-                        onBack={() => setToggleCashier(false)}
-                        show={toggleCashier}
-                    />
-                </div>
+                {toggleCashier && (
+                    <div className="fixed inset-0 z-100 bg-black">
+                        <Cashiering
+                            onBack={() => setToggleCashier(false)}
+                            show={toggleCashier}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );
