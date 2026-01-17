@@ -46,6 +46,7 @@ export const useSenderPeer = (username: string) => {
         peer.on("error", (err) => {
             console.error(err);
             setConnectionStatus("idle");
+            localStorage.clear();
         });
 
         peerRef.current = peer;
@@ -88,7 +89,7 @@ export const useSenderPeer = (username: string) => {
 
             if (msg.type === "REQUEST_DOWNLOAD") {
                 const file = filesRef.current.find(
-                    (f) => f.id === msg.payload.fileId
+                    (f) => f.id === msg.payload.fileId,
                 );
                 if (!file) return;
 
@@ -102,7 +103,7 @@ export const useSenderPeer = (username: string) => {
                                   fileName: file.file.name,
                                   type: "download",
                               },
-                          ]
+                          ],
                 );
             }
         });
@@ -142,8 +143,8 @@ export const useSenderPeer = (username: string) => {
 
         setFiles((prev) =>
             prev.map((f) =>
-                f.id === fileObj.id ? { ...f, status: "meta-sent" } : f
-            )
+                f.id === fileObj.id ? { ...f, status: "meta-sent" } : f,
+            ),
         );
     };
 
@@ -168,7 +169,7 @@ export const useSenderPeer = (username: string) => {
     // ---------- SEND FILE ----------
     const startDataTransfer = async (
         fileObj: QueuedFile,
-        conn: DataConnection
+        conn: DataConnection,
     ) => {
         if (!conn.open) return;
 
@@ -176,8 +177,8 @@ export const useSenderPeer = (username: string) => {
             prev.map((f) =>
                 f.id === fileObj.id
                     ? { ...f, status: "transferring", progress: 0 }
-                    : f
-            )
+                    : f,
+            ),
         );
 
         const getBufferedAmount = () => (conn as any)?._dc?.bufferedAmount ?? 0;
@@ -208,11 +209,11 @@ export const useSenderPeer = (username: string) => {
                         ? {
                               ...f,
                               progress: Math.round(
-                                  (offset / fileObj.file.size) * 100
+                                  (offset / fileObj.file.size) * 100,
                               ),
                           }
-                        : f
-                )
+                        : f,
+                ),
             );
         }
 
@@ -225,14 +226,15 @@ export const useSenderPeer = (username: string) => {
             prev.map((f) =>
                 f.id === fileObj.id
                     ? { ...f, status: "sent", progress: 100 }
-                    : f
-            )
+                    : f,
+            ),
         );
     };
 
     const disconnect = () => {
         connRef.current?.close();
         setConnectionStatus("idle");
+        localStorage.clear();
     };
 
     return {

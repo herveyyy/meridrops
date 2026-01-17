@@ -12,6 +12,8 @@ import {
     CheckSquare,
     X,
     Printer,
+    MoveLeft,
+    ArrowLeftIcon,
 } from "lucide-react";
 import { Customer, useReceiverPeer } from "../../hooks/useReceiverPeer";
 import { useZipDownloader } from "../../hooks/useZipDownloader";
@@ -20,25 +22,27 @@ import { Input } from "../atoms/Input";
 import { FileGridItem } from "../molecules/FileGridItem";
 import Image from "next/image";
 import LogoutBTN from "../molecules/LogoutBTN";
-
+import { useRouter } from "next/navigation";
+import { useCashiering } from "@/hooks/useCashiering";
+import Cashiering from "./Cashiering";
 const ReceiverView: React.FC = () => {
     const { serverId, qrCodeUrl, customers, requestDownload, closeConnection } =
         useReceiverPeer();
     const { downloadSelectedZip } = useZipDownloader();
 
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
-        null
+        null,
     );
     const [searchTerm, setSearchTerm] = useState("");
     const [showQr, setShowQr] = useState(true);
     const [isDesktop, setIsDesktop] = useState(false);
-
     // Selection State
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
-        new Set()
+        new Set(),
     );
-
+    const router = useRouter();
+    const { setToggleCashier, toggleCashier } = useCashiering();
     // Handle responsive layout
     useEffect(() => {
         const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
@@ -71,7 +75,7 @@ const ReceiverView: React.FC = () => {
     const requestAll = () => {
         if (!selectedCustomer) return;
         const pendingFiles = selectedCustomer.files.filter(
-            (f) => f.status === "pending"
+            (f) => f.status === "pending",
         );
         pendingFiles.forEach((file) => requestDownload(selectedCustomer, file));
     };
@@ -89,17 +93,18 @@ const ReceiverView: React.FC = () => {
     const filteredCustomers = customers.filter(
         (c) =>
             c.peerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            c.label.toLowerCase().includes(searchTerm.toLowerCase())
+            c.label.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     const selectedCustomer = customers.find(
-        (c) => c.peerId === selectedCustomerId
+        (c) => c.peerId === selectedCustomerId,
     );
 
     const isMobile = !isDesktop;
     const handleCloseConnection = (customer: Customer) => {
         closeConnection(customer);
     };
+
     return (
         <div className="flex flex-col h-full bg-black text-white relative lg:flex-row overflow-hidden">
             {/* Sidebar (Customers) */}
@@ -111,14 +116,6 @@ const ReceiverView: React.FC = () => {
                 }`}
             >
                 <div className="p-4 border-b border-white/10">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold">Admin Panel</h2>
-                        <div className="flex items-center space-x-2 bg-black/40 px-2 py-1 rounded text-xs">
-                            <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                            <span>Online</span>
-                        </div>
-                    </div>
-
                     <div className="bg-black/40 rounded-lg p-3 mb-4 flex items-center justify-between">
                         <div className="overflow-hidden">
                             <p className="text-[10px] text-gray-400 uppercase">
@@ -234,16 +231,25 @@ const ReceiverView: React.FC = () => {
                             {selectedCustomer?.label || "Files"}
                         </span>
                     </div>
+
                     {selectedCustomer && (
-                        <button
-                            onClick={() => setIsSelectionMode(!isSelectionMode)}
-                            className="text-primary text-sm font-medium"
-                        >
-                            {isSelectionMode ? "Cancel" : "Select"}
-                        </button>
+                        <div className="flex gap-2 ">
+                            <Button
+                                children={<p>Transact</p>}
+                                onClick={() => setToggleCashier(true)}
+                            />
+
+                            <button
+                                onClick={() =>
+                                    setIsSelectionMode(!isSelectionMode)
+                                }
+                                className="text-primary text-sm font-medium"
+                            >
+                                {isSelectionMode ? "Cancel" : "Select"}
+                            </button>
+                        </div>
                     )}
                 </div>
-
                 {selectedCustomer ? (
                     <div className="p-6 flex-1 overflow-y-auto relative">
                         <div className="flex items-center justify-between mb-6">
@@ -266,7 +272,7 @@ const ReceiverView: React.FC = () => {
                                 {!isSelectionMode ? (
                                     <>
                                         {selectedCustomer.files.some(
-                                            (f) => f.status === "pending"
+                                            (f) => f.status === "pending",
                                         ) && (
                                             <Button
                                                 variant="secondary"
@@ -280,7 +286,7 @@ const ReceiverView: React.FC = () => {
                                             </Button>
                                         )}
                                         {selectedCustomer.files.some(
-                                            (f) => f.status === "complete"
+                                            (f) => f.status === "complete",
                                         ) && (
                                             <Button
                                                 variant="outline"
@@ -343,7 +349,7 @@ const ReceiverView: React.FC = () => {
                                         file={file}
                                         isSelectionMode={isSelectionMode}
                                         isSelected={selectedFileIds.has(
-                                            file.id
+                                            file.id,
                                         )}
                                         onSelect={() =>
                                             toggleSelection(file.id)
@@ -351,13 +357,13 @@ const ReceiverView: React.FC = () => {
                                         onRequest={() =>
                                             requestDownload(
                                                 selectedCustomer,
-                                                file
+                                                file,
                                             )
                                         }
                                         onDownload={() =>
                                             downloadFileToDisk(
                                                 file,
-                                                file.meta.type
+                                                file.meta.type,
                                             )
                                         }
                                     />
@@ -413,6 +419,12 @@ const ReceiverView: React.FC = () => {
                         </p>
                     </div>
                 )}
+                <div className="fixed inset-0 z-100 bg-black">
+                    <Cashiering
+                        onBack={() => setToggleCashier(false)}
+                        show={toggleCashier}
+                    />
+                </div>
             </div>
         </div>
     );

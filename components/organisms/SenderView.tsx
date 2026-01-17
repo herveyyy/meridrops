@@ -20,18 +20,7 @@ import { Input } from "../atoms/Input";
 import { Header } from "../molecules/Header";
 import { StatusCard } from "./StatusCard";
 import ApprovalModal from "../molecules/ApprovalModal";
-const servicesEnabledList = {
-    document:
-        process.env.NEXT_PUBLIC_PRINT_SERVICE_DOCUMENT === "true"
-            ? true
-            : false,
-    photo:
-        process.env.NEXT_PUBLIC_PRINT_SERVICE_PHOTO === "true" ? true : false,
-    idCard:
-        process.env.NEXT_PUBLIC_PRINT_SERVICE_ID_CARD === "true" ? true : false,
-    poster:
-        process.env.NEXT_PUBLIC_PRINT_SERVICE_POSTER === "true" ? true : false,
-};
+
 const SenderView: React.FC = () => {
     // New state to manage the flow: 'identity' -> 'services' -> 'dashboard'
     const [viewStep, setViewStep] = useState<
@@ -79,7 +68,7 @@ const SenderView: React.FC = () => {
         },
     ];
     const enabledServices = availableServices.filter(
-        (service) => service.enable === true
+        (service) => service.enable === true,
     );
 
     useEffect(() => {
@@ -118,7 +107,7 @@ const SenderView: React.FC = () => {
         setSelectedServices((prev) =>
             prev.includes(name)
                 ? prev.filter((s) => s !== name)
-                : [...prev, name]
+                : [...prev, name],
         );
     };
 
@@ -188,7 +177,7 @@ const SenderView: React.FC = () => {
                     <div className="grid grid-cols-2 gap-6">
                         {enabledServices.map((service) => {
                             const isSelected = selectedServices.includes(
-                                service.name
+                                service.name,
                             );
                             return (
                                 <button
@@ -241,119 +230,122 @@ const SenderView: React.FC = () => {
     }
 
     // 3. Main Dashboard
-    return (
-        <div className="flex flex-col h-full bg-black text-white relative">
-            <Header
-                title="Send to Server"
-                subtitle={`Services: ${selectedServices.join(", ")}`}
-                onBack={handleBack}
-            />
-            {/* The rest of your existing Dashboard code (Scanner, StatusCard, File List) */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                {/* ID Reader Container */}
-                <div
-                    id="reader"
-                    className="mx-auto w-full max-w-sm overflow-hidden rounded-[2.5rem] border-0! p-8 shadow-2xl backdrop-blur-xl [&_img]:hidden [&_#reader__status_span]:hidden"
-                ></div>
-
-                <StatusCard
-                    status={connectionStatus}
-                    adminId={adminId}
-                    setAdminId={setAdminId}
-                    onConnect={() => connectToAdmin(adminId)}
-                    onScan={() => setConnectionStatus("scanning")}
-                    onCancel={() => setConnectionStatus("idle")}
-                    onDisconnect={disconnect}
+    if (viewStep === "dashboard" && selectedServices.length !== 0) {
+        return (
+            <div className="flex flex-col h-full bg-black text-white relative">
+                <Header
+                    title="Send to Server"
+                    subtitle={`Services: ${selectedServices.join(", ")}`}
+                    onBack={handleBack}
                 />
+                {/* The rest of your existing Dashboard code (Scanner, StatusCard, File List) */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                    {/* ID Reader Container */}
+                    <div
+                        id="reader"
+                        className="mx-auto w-full max-w-sm overflow-hidden rounded-[2.5rem] border-0! p-8 shadow-2xl backdrop-blur-xl [&_img]:hidden [&_#reader__status_span]:hidden"
+                    ></div>
 
-                {connectionStatus === "connected" && (
-                    <div className="animate-slide-up space-y-6">
-                        <div className="relative group">
-                            <input
-                                type="file"
-                                multiple
-                                onChange={handleFileChange}
-                                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                            />
-                            <div className="bg-gray-ios-light/50 border-2 border-dashed border-gray-600 hover:border-primary hover:bg-gray-ios-light transition-all duration-300 rounded-2xl p-8 flex flex-col items-center justify-center group-active:scale-95">
-                                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Plus className="w-8 h-8 text-primary" />
-                                </div>
-                                <span className="font-medium text-lg text-white">
-                                    Tap to Upload
-                                </span>
-                                <span className="text-sm text-gray-500 mt-1">
-                                    Photos, Documents, Archives
-                                </span>
-                            </div>
-                        </div>
+                    <StatusCard
+                        status={connectionStatus}
+                        adminId={adminId}
+                        setAdminId={setAdminId}
+                        onConnect={() => connectToAdmin(adminId)}
+                        onScan={() => setConnectionStatus("scanning")}
+                        onCancel={() => setConnectionStatus("idle")}
+                        onDisconnect={disconnect}
+                    />
 
-                        {files.length > 0 && (
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-semibold text-gray-400 px-1">
-                                    Transfers ({files.length})
-                                </h3>
-                                {files.map((f, i) => (
-                                    <div
-                                        key={f.id}
-                                        className="bg-surface rounded-xl p-4 flex items-center gap-3 animate-slide-up"
-                                        style={{
-                                            animationDelay: `${i * 0.05}s`,
-                                        }}
-                                    >
-                                        <div
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                                f.status === "sent"
-                                                    ? "bg-success/20"
-                                                    : "bg-gray-800"
-                                            }`}
-                                        >
-                                            {f.status === "sent" ? (
-                                                <CheckCircle2 className="w-5 h-5 text-success" />
-                                            ) : (
-                                                <FileIcon className="w-5 h-5 text-gray-400" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <p className="font-medium text-sm truncate text-white">
-                                                    {f.file.name}
-                                                </p>
-                                                <span className="text-xs text-gray-500">
-                                                    {formatBytes(f.file.size)}
-                                                </span>
-                                            </div>
-                                            <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all duration-300 ${
-                                                        f.status === "sent"
-                                                            ? "bg-success"
-                                                            : "bg-primary"
-                                                    }`}
-                                                    style={{
-                                                        width: `${f.progress}%`,
-                                                    }}
-                                                ></div>
-                                            </div>
-                                        </div>
+                    {connectionStatus === "connected" && (
+                        <div className="animate-slide-up space-y-6">
+                            <div className="relative group">
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleFileChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                                />
+                                <div className="bg-gray-ios-light/50 border-2 border-dashed border-gray-600 hover:border-primary hover:bg-gray-ios-light transition-all duration-300 rounded-2xl p-8 flex flex-col items-center justify-center group-active:scale-95">
+                                    <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <Plus className="w-8 h-8 text-primary" />
                                     </div>
-                                ))}
+                                    <span className="font-medium text-lg text-white">
+                                        Tap to Upload
+                                    </span>
+                                    <span className="text-sm text-gray-500 mt-1">
+                                        Photos, Documents, Archives
+                                    </span>
+                                </div>
                             </div>
-                        )}
-                    </div>
+
+                            {files.length > 0 && (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-gray-400 px-1">
+                                        Transfers ({files.length})
+                                    </h3>
+                                    {files.map((f, i) => (
+                                        <div
+                                            key={f.id}
+                                            className="bg-surface rounded-xl p-4 flex items-center gap-3 animate-slide-up"
+                                            style={{
+                                                animationDelay: `${i * 0.05}s`,
+                                            }}
+                                        >
+                                            <div
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                                    f.status === "sent"
+                                                        ? "bg-success/20"
+                                                        : "bg-gray-800"
+                                                }`}
+                                            >
+                                                {f.status === "sent" ? (
+                                                    <CheckCircle2 className="w-5 h-5 text-success" />
+                                                ) : (
+                                                    <FileIcon className="w-5 h-5 text-gray-400" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <p className="font-medium text-sm truncate text-white">
+                                                        {f.file.name}
+                                                    </p>
+                                                    <span className="text-xs text-gray-500">
+                                                        {formatBytes(
+                                                            f.file.size,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="w-full bg-gray-800 h-1 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full transition-all duration-300 ${
+                                                            f.status === "sent"
+                                                                ? "bg-success"
+                                                                : "bg-primary"
+                                                        }`}
+                                                        style={{
+                                                            width: `${f.progress}%`,
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {approvalQueue.length > 0 && (
+                    <ApprovalModal
+                        approvalQueue={approvalQueue}
+                        handleApprove={handleApprove}
+                        handleDeny={handleDeny}
+                        approvalType={approvalQueue[0].type || "download"}
+                    />
                 )}
             </div>
-
-            {approvalQueue.length > 0 && (
-                <ApprovalModal
-                    approvalQueue={approvalQueue}
-                    handleApprove={handleApprove}
-                    handleDeny={handleDeny}
-                    approvalType={approvalQueue[0].type || "download"}
-                />
-            )}
-        </div>
-    );
+        );
+    }
 };
-
 export default SenderView;

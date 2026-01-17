@@ -37,7 +37,7 @@ export const useReceiverPeer = () => {
                 chunks: ArrayBuffer[];
                 received: number;
             }
-        >()
+        >(),
     );
 
     const handleData = (data: unknown, senderId: string) => {
@@ -69,8 +69,8 @@ export const useReceiverPeer = () => {
                                   },
                               ],
                           }
-                        : c
-                )
+                        : c,
+                ),
             );
         }
 
@@ -99,13 +99,13 @@ export const useReceiverPeer = () => {
                                       100,
                                       Math.round(
                                           (entry.received / entry.meta.size) *
-                                              100
-                                      )
+                                              100,
+                                      ),
                                   ),
                               }
-                            : f
+                            : f,
                     ),
-                }))
+                })),
             );
         }
 
@@ -134,9 +134,9 @@ export const useReceiverPeer = () => {
                                   progress: 100,
                                   blobUrl,
                               }
-                            : f
+                            : f,
                     ),
-                }))
+                })),
             );
         }
 
@@ -148,18 +148,18 @@ export const useReceiverPeer = () => {
                 prev.map((c) => ({
                     ...c,
                     files: c.files.map((f) =>
-                        f.fileId === fileId ? { ...f, status: "denied" } : f
+                        f.fileId === fileId ? { ...f, status: "denied" } : f,
                     ),
-                }))
+                })),
             );
         }
     };
 
     useEffect(() => {
-        let adminId = localStorage.getItem("admin_id_admin_id");
+        let adminId = localStorage.getItem("last_admin_id");
         if (!adminId) {
             adminId = `ADMIN-${generateShortId()}`;
-            localStorage.setItem("admin_id_admin_id", adminId);
+            localStorage.setItem("last_admin_id", adminId);
         }
 
         const peer = new Peer(adminId, { debug: 1 });
@@ -190,8 +190,8 @@ export const useReceiverPeer = () => {
             conn.on("data", (data) => handleData(data, conn.peer));
             conn.on("close", () =>
                 setCustomers((prev) =>
-                    prev.filter((c) => c.peerId !== conn.peer)
-                )
+                    prev.filter((c) => c.peerId !== conn.peer),
+                ),
             );
         });
 
@@ -215,18 +215,18 @@ export const useReceiverPeer = () => {
                           files: c.files.map((f) =>
                               f.fileId === file.fileId
                                   ? { ...f, status: "requested" }
-                                  : f
+                                  : f,
                           ),
                       }
-                    : c
-            )
+                    : c,
+            ),
         );
     };
 
     const closeConnection = (customer: Customer) => {
         customer.conn.close();
         setCustomers((prev) =>
-            prev.filter((c) => c.peerId !== customer.peerId)
+            prev.filter((c) => c.peerId !== customer.peerId),
         );
     };
 
