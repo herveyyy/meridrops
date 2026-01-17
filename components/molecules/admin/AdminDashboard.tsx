@@ -77,13 +77,19 @@ const AdminWrapper = () => {
 
             {/* 2. DYNAMIC CONTENT AREA */}
             <div className="flex-1 relative">
-                {activeTab === "cashier" ? (
-                    /* YOUR FULL VIEW RENDERS HERE WITHOUT INTERFERENCE */
-                    <div className="h-full w-full animate-in fade-in duration-300">
-                        <ReceiverView />
-                    </div>
-                ) : (
-                    /* OTHER ADMIN VIEWS */
+                {/* CASHIER (always mounted) */}
+                <div
+                    className={`h-full w-full transition-opacity ${
+                        activeTab === "cashier"
+                            ? "opacity-100 pointer-events-auto"
+                            : "opacity-0 pointer-events-none absolute inset-0"
+                    }`}
+                >
+                    <ReceiverView />
+                </div>
+
+                {/* OTHER VIEWS */}
+                {activeTab !== "cashier" && (
                     <div className="p-8 h-full overflow-y-auto bg-[#0a0a0a] animate-in slide-in-from-bottom-2 duration-300">
                         {activeTab === "sales" && <SalesSection />}
                         {activeTab === "inventory" && <InventorySection />}

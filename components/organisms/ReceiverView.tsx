@@ -11,9 +11,6 @@ import {
     DownloadCloud,
     CheckSquare,
     X,
-    Printer,
-    MoveLeft,
-    ArrowLeftIcon,
 } from "lucide-react";
 import { Customer, useReceiverPeer } from "../../hooks/useReceiverPeer";
 import { useZipDownloader } from "../../hooks/useZipDownloader";
