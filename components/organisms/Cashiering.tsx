@@ -1,16 +1,74 @@
 import React, { useState, useEffect } from "react";
 import { useCashiering } from "@/hooks/useCashiering";
-import { ChevronLeft, ShoppingCart, CreditCard, Search, X } from "lucide-react";
+import { useProductModal } from "@/hooks/useProductModal";
 
+import {
+    ChevronLeft,
+    ShoppingCart,
+    CreditCard,
+    Search,
+    X,
+    LayoutGrid,
+    List,
+} from "lucide-react";
+import ProductModal from "@/components/organisms/ProductModal";
 type Props = {
     onBack: () => void;
     show: boolean;
 };
+export type ItemType = "product" | "service";
+
+export interface Item {
+    id: string;
+    name: string;
+    price: number;
+    type: ItemType;
+    stock?: number;
+    category?: string;
+    icon?: React.ReactNode;
+}
+const items: Item[] = [
+    {
+        id: "svc-001",
+        name: "Phone Repair",
+        price: 25,
+        type: "service",
+        stock: 42,
+        category: "Repairs",
+    },
+    {
+        id: "prd-001",
+        name: "USB-C Cable",
+        price: 5,
+        type: "product",
+        stock: 42,
+
+        category: "Accessories",
+    },
+    {
+        id: "prd-002",
+        name: "Wireless Mouse",
+        price: 18,
+        type: "product",
+        stock: 42,
+
+        category: "Accessories",
+    },
+    {
+        id: "svc-002",
+        name: "PC Cleaning",
+        price: 15,
+        stock: 42,
+
+        type: "service",
+        category: "Maintenance",
+    },
+];
 
 const Cashiering: React.FC<Props> = ({ onBack, show }) => {
-    const cashiering = useCashiering();
+    const { viewType, setViewType } = useCashiering();
     const [searchQuery, setSearchQuery] = useState("");
-
+    const { selectedProduct, setSelectedProduct } = useProductModal();
     // Animation Classes
     const animationClasses = show
         ? "opacity-100 translate-y-0 pointer-events-auto"
@@ -18,7 +76,7 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
 
     return (
         <div
-            className={`fixed inset-0 z-[100] flex bg-zinc-950 text-white overflow-hidden transition-all duration-300 ease-out transform ${animationClasses}`}
+            className={`fixed inset-0 z-100 flex bg-zinc-950 text-white overflow-hidden transition-all duration-300 ease-out transform ${animationClasses}`}
         >
             {/* 1. Main Screen: Items/Services (80% width) */}
             <div className="flex-1 flex flex-col border-r border-white/10">
@@ -57,26 +115,121 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                             </button>
                         )}
                     </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                setViewType("grid");
+                            }}
+                            className={`p-2 rounded-lg transition ${
+                                viewType === "grid"
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white/5 text-zinc-400 hover:text-white"
+                            }`}
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+
+                        <button
+                            onClick={() => setViewType("row")}
+                            className={`p-2 rounded-lg transition ${
+                                viewType === "row"
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-white/5 text-zinc-400 hover:text-white"
+                            }`}
+                        >
+                            <List className="w-4 h-4" />
+                        </button>
+                    </div>
                 </header>
 
                 {/* Items Grid */}
                 <main className="p-6 overflow-y-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <div className="aspect-square bg-zinc-900 rounded-2xl border border-white/5 p-4 flex flex-col justify-end hover:border-blue-500 transition-all cursor-pointer group">
-                            <div className="mb-auto">
-                                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                    <ShoppingCart className="w-5 h-5" />
+                    <div
+                        className={
+                            viewType === "grid"
+                                ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                                : "flex flex-col gap-2"
+                        }
+                    >
+                        {items.map((item) =>
+                            viewType === "grid" ? (
+                                <button
+                                    onClick={() => {
+                                        if (item.type === "product") {
+                                            setSelectedProduct(item);
+                                        }
+                                    }}
+                                    key={item.id}
+                                    className="aspect-square bg-zinc-900 rounded-2xl border border-white/5 p-4 flex flex-col justify-end hover:border-blue-500 transition-all cursor-pointer group"
+                                >
+                                    <div className="mb-auto">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                            <ShoppingCart className="w-5 h-5" />
+                                        </div>
+                                    </div>
+                                    <p className="font-medium">{item.name}</p>
+                                    <p className="text-zinc-500 text-sm">
+                                        ${item.price.toFixed(2)}
+                                    </p>
+                                </button>
+                            ) : (
+                                /* ROW ITEM */
+                                <div
+                                    key={item.id}
+                                    className="flex items-center justify-between bg-zinc-900 rounded-xl border border-white/5 px-4 py-3 hover:border-blue-500 transition cursor-pointer"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                            <ShoppingCart className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">
+                                                {item.name}
+                                            </p>
+                                            <p className="text-xs text-zinc-500">
+                                                ${item.price.toFixed(2)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            if (item.type === "product") {
+                                                setSelectedProduct(item);
+                                            }
+                                        }}
+                                        className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-semibold"
+                                    >
+                                        Add
+                                    </button>
                                 </div>
-                            </div>
-                            <p className="font-medium">Service Name</p>
-                            <p className="text-zinc-500 text-sm">$0.00</p>
-                        </div>
+                            ),
+                        )}
                     </div>
                 </main>
             </div>
+            {selectedProduct && (
+                <ProductModal
+                    open={!!selectedProduct}
+                    onClose={() => setSelectedProduct(null)}
+                    name={selectedProduct.name}
+                    price={selectedProduct.price}
+                    stock={selectedProduct.stock ?? 0}
+                    onConfirm={(qty, total) => {
+                        console.log("ADD TO CART:", {
+                            id: selectedProduct.id,
+                            qty,
+                            total,
+                        });
+
+                        // later → add to cashier cart store
+                        setSelectedProduct(null);
+                    }}
+                />
+            )}
 
             {/* 2. Checkout Screen: (20% width) */}
-            <div className="w-1/5 h-full bg-zinc-900/50 flex flex-col backdrop-blur-sm border-l border-white/5">
+            <div className="w-64 h-full bg-zinc-900/50 flex flex-col backdrop-blur-sm border-l border-white/5">
                 <div className="p-4 border-b border-white/10 flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5 text-blue-400" />
                     <h2 className="font-semibold text-sm lg:text-base uppercase tracking-wider">
