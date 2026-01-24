@@ -68,7 +68,8 @@ const defaultServices = [
 
 const ServicesSection = () => {
     return (
-        <div className="max-w-6xl mx-auto space-y-6 h-[calc(100vh-var(--spacing-14))] overflow-y-auto p-6 animate-slide-up no-scrollbar">
+        <div className=" space-y-8 h-[calc(100vh-(--spacing(14)))] overflow-y-auto p-4 animate-slide-up">
+            {" "}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-black uppercase tracking-tighter">
@@ -83,7 +84,6 @@ const ServicesSection = () => {
                     Add Type
                 </button>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {defaultServices.map((service, index) => (
                     <ServiceCard key={index} {...service} />

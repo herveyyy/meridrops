@@ -11,7 +11,7 @@ import {
 
 const InventorySection = () => {
     return (
-        <div className=" space-y-6 h-[calc(100vh-var(--spacing-14))] overflow-y-auto p-6 animate-slide-up">
+        <div className=" space-y-8 h-[calc(100vh-(--spacing(14)))] overflow-y-auto p-4 animate-slide-up">
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

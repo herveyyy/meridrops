@@ -34,18 +34,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
     useEffect(() => {
         if (open) {
             setQty(1);
-            // Default to the first variant's price if available, otherwise use base price
-            const initialPrice =
-                variants.length > 0 ? variants[0].price : price;
-            setManualTotal(initialPrice);
-            setSelectedVariant(variants.length > 0 ? variants[0] : null);
-        }
-    }, [open, price, variants]);
 
-    // Update manualTotal whenever a variant is clicked
+            const initialVariant = variants.length > 0 ? variants[0] : null;
+            setSelectedVariant(initialVariant);
+
+            if (type === "service" && initialVariant) {
+                setManualTotal(initialVariant.price);
+            }
+        }
+    }, [open, variants, type]);
+
     const handleVariantClick = (v: { size: string; price: number }) => {
         setSelectedVariant(v);
-        setManualTotal(v.price);
+
+        if (type === "service") {
+            setManualTotal(v.price);
+        }
     };
 
     if (!open) return null;
