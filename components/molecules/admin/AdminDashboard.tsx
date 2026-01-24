@@ -13,11 +13,12 @@ import ReceiverView from "@/components/organisms/ReceiverView";
 import StaffSection from "@/components/organisms/StaffSection";
 import InventorySection from "@/components/organisms/InventorySection";
 import SalesSection from "@/components/organisms/SalesSection";
+import ServicesSection from "@/components/organisms/ServicesSection";
 
 const AdminWrapper = () => {
     // We keep track of whether we are in "Terminal" mode or "Management" mode
     const [activeTab, setActiveTab] = useState<
-        "cashier" | "sales" | "inventory" | "staff"
+        "cashier" | "sales" | "inventory" | "staff" | "services"
     >("cashier");
 
     return (
@@ -96,10 +97,11 @@ const AdminWrapper = () => {
 
                 {/* OTHER VIEWS */}
                 {activeTab !== "cashier" && (
-                    <div className="h-full overflow-y-auto bg-[#0a0a0a] animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="overflow-hidden  bg-[#0a0a0a] animate-in slide-in-from-bottom-2 duration-300">
                         {activeTab === "sales" && <SalesSection />}
                         {activeTab === "inventory" && <InventorySection />}
                         {activeTab === "staff" && <StaffSection />}
+                        {activeTab === "services" && <ServicesSection />}
                     </div>
                 )}
             </div>

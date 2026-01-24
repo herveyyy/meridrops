@@ -32,6 +32,7 @@ export interface Item {
     type: ItemType;
     stock?: number;
     category?: string;
+    variants?: { size: string; price: number }[];
     icon?: React.ReactNode;
 }
 const items: Item[] = [
@@ -42,6 +43,11 @@ const items: Item[] = [
         type: "service",
         stock: 9999,
         category: "Printing",
+        variants: [
+            { size: "A4", price: 2.0 },
+            { size: "Short", price: 2.0 },
+            { size: "Long", price: 3.0 },
+        ],
     },
     {
         id: "print-009",
@@ -50,46 +56,45 @@ const items: Item[] = [
         type: "service",
         stock: 9999,
         category: "Printing",
-    },
-    {
-        id: "print-002",
-        name: "Shirt Print",
-        price: 250.0, // ₱250.00
-        type: "product",
-        stock: 50,
-        category: "Merch",
-    },
-    {
-        id: "print-003",
-        name: "Mug Print",
-        price: 150.0, // ₱150.00
-        type: "product",
-        stock: 30,
-        category: "Merch",
+        variants: [
+            { size: "A4", price: 5.0 },
+            { size: "Short", price: 5.0 },
+            { size: "Long", price: 7.0 },
+        ],
     },
     {
         id: "print-004",
         name: "Tarp",
-        price: 25.0, // ₱25.00 per sq ft
+        price: 25.0,
         type: "service",
         stock: 100,
         category: "Large Format",
+        variants: [
+            { size: "Standard Vinyl", price: 25.0 },
+            { size: "High-Res Vinyl", price: 35.0 },
+            { size: "Reflective", price: 65.0 },
+        ],
     },
     {
-        id: "print-005",
-        name: "Photo Print",
-        price: 10.0, // ₱10.00
-        type: "service",
-        stock: 9999,
-        category: "Printing",
-    },
-    {
-        id: "print-006",
-        name: "ID Card",
-        price: 100.0, // ₱100.00
+        id: "print-002",
+        name: "Shirt Print",
+        price: 250.0,
         type: "product",
-        stock: 200,
-        category: "Cards",
+        stock: 50,
+        category: "Merch",
+        variants: [
+            { size: "White Shirt", price: 250.0 },
+            { size: "Colored Shirt", price: 300.0 },
+        ],
+    },
+    // Items without variants will use their base price by default
+    {
+        id: "print-003",
+        name: "Mug Print",
+        price: 150.0,
+        type: "product",
+        stock: 30,
+        category: "Merch",
     },
 ];
 
@@ -269,6 +274,7 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                     onClose={() => setSelectedProduct(null)}
                     name={selectedProduct.name}
                     price={selectedProduct.price}
+                    variants={selectedProduct.variants || []}
                     stock={selectedProduct.stock ?? 0}
                     onConfirm={(qty, total) => {
                         const item: CheckoutItem = {

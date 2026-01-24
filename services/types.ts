@@ -28,5 +28,6 @@ export interface CheckoutItem {
     quantity: number;
     price: number;
     totalPrice: number;
+    variants?: { size: string; price: number }[];
     type: "product" | "service";
 }
