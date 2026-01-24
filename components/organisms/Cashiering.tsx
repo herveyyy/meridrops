@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useCashiering } from "@/hooks/useCashiering";
 import { useProductModal } from "@/hooks/useProductModal";
 
@@ -10,12 +10,19 @@ import {
     X,
     LayoutGrid,
     List,
+    Printer,
+    Check, // Added icon for printing context
 } from "lucide-react";
 import ProductModal from "@/components/organisms/ProductModal";
+import Pagination from "./Pagination";
+import Checkout from "../molecules/cashiering/Checkout";
+import { CheckoutItem } from "@/services/types";
+
 type Props = {
     onBack: () => void;
     show: boolean;
 };
+
 export type ItemType = "product" | "service";
 
 export interface Item {
@@ -29,51 +36,94 @@ export interface Item {
 }
 const items: Item[] = [
     {
-        id: "svc-001",
-        name: "Phone Repair",
-        price: 25,
+        id: "print-001",
+        name: "Documents",
+        price: 1.0,
         type: "service",
-        stock: 42,
-        category: "Repairs",
+        stock: 9999,
+        category: "Printing",
     },
     {
-        id: "prd-001",
-        name: "USB-C Cable",
-        price: 5,
-        type: "product",
-        stock: 42,
-
-        category: "Accessories",
-    },
-    {
-        id: "prd-002",
-        name: "Wireless Mouse",
-        price: 18,
-        type: "product",
-        stock: 42,
-
-        category: "Accessories",
-    },
-    {
-        id: "svc-002",
-        name: "PC Cleaning",
-        price: 15,
-        stock: 42,
-
+        id: "print-009",
+        name: "Colored Documents",
+        price: 5.0,
         type: "service",
-        category: "Maintenance",
+        stock: 9999,
+        category: "Printing",
+    },
+    {
+        id: "print-002",
+        name: "Shirt Print",
+        price: 250.0, // ₱250.00
+        type: "product",
+        stock: 50,
+        category: "Merch",
+    },
+    {
+        id: "print-003",
+        name: "Mug Print",
+        price: 150.0, // ₱150.00
+        type: "product",
+        stock: 30,
+        category: "Merch",
+    },
+    {
+        id: "print-004",
+        name: "Tarp",
+        price: 25.0, // ₱25.00 per sq ft
+        type: "service",
+        stock: 100,
+        category: "Large Format",
+    },
+    {
+        id: "print-005",
+        name: "Photo Print",
+        price: 10.0, // ₱10.00
+        type: "service",
+        stock: 9999,
+        category: "Printing",
+    },
+    {
+        id: "print-006",
+        name: "ID Card",
+        price: 100.0, // ₱100.00
+        type: "product",
+        stock: 200,
+        category: "Cards",
     },
 ];
 
 const Cashiering: React.FC<Props> = ({ onBack, show }) => {
-    const { viewType, setViewType } = useCashiering();
+    const {
+        viewType,
+        setViewType,
+        cartItems,
+        handleAddToCart,
+        handleRemoveFromCart,
+    } = useCashiering();
     const [searchQuery, setSearchQuery] = useState("");
     const { selectedProduct, setSelectedProduct } = useProductModal();
-    // Animation Classes
+    const [selectedCartItem, setSelectedCartItem] = useState<CheckoutItem>({
+        id: "",
+        name: "",
+        quantity: 0,
+        price: 0,
+        totalPrice: 0,
+        type: "product",
+    });
+    const [offset, setOffset] = useState(0);
+    const limit = 3;
+
     const animationClasses = show
         ? "opacity-100 translate-y-0 pointer-events-auto"
         : "opacity-0 translate-y-4 pointer-events-none";
 
+    const filteredItems = items.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    const totalItems = filteredItems.length;
+    const paginatedItems = filteredItems.slice(offset, offset + limit);
     return (
         <div
             className={`fixed inset-0 z-100 flex bg-zinc-950 text-white overflow-hidden transition-all duration-300 ease-out transform ${animationClasses}`}
@@ -90,7 +140,7 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                             <ChevronLeft className="w-6 h-6" />
                         </button>
                         <h1 className="text-xl font-bold hidden sm:block">
-                            Items & Services
+                            Printing Services
                         </h1>
                     </div>
 
@@ -115,11 +165,11 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                             </button>
                         )}
                     </div>
+
+                    {/* View Toggle */}
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={() => {
-                                setViewType("grid");
-                            }}
+                            onClick={() => setViewType("grid")}
                             className={`p-2 rounded-lg transition ${
                                 viewType === "grid"
                                     ? "bg-blue-600 text-white"
@@ -141,7 +191,6 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                         </button>
                     </div>
                 </header>
-
                 {/* Items Grid */}
                 <main className="p-6 overflow-y-auto">
                     <div
@@ -151,63 +200,69 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                                 : "flex flex-col gap-2"
                         }
                     >
-                        {items.map((item) =>
+                        {paginatedItems.map((item) =>
                             viewType === "grid" ? (
                                 <button
-                                    onClick={() => {
-                                        if (item.type === "product") {
-                                            setSelectedProduct(item);
-                                        }
-                                    }}
+                                    onClick={() => setSelectedProduct(item)}
                                     key={item.id}
                                     className="aspect-square bg-zinc-900 rounded-2xl border border-white/5 p-4 flex flex-col justify-end hover:border-blue-500 transition-all cursor-pointer group"
                                 >
-                                    <div className="mb-auto">
+                                    <div className="mb-auto w-full flex justify-between items-start">
                                         <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                            <ShoppingCart className="w-5 h-5" />
+                                            {/* Using generic Printer icon, or could use dynamic icons based on category */}
+                                            <Printer className="w-5 h-5" />
                                         </div>
+                                        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold bg-white/5 px-2 py-1 rounded">
+                                            {item.type}
+                                        </span>
                                     </div>
-                                    <p className="font-medium">{item.name}</p>
-                                    <p className="text-zinc-500 text-sm">
-                                        ${item.price.toFixed(2)}
+                                    <p className="font-medium text-left">
+                                        {item.name}
+                                    </p>
+                                    <p className="text-zinc-500 text-sm text-left">
+                                        ₱{item.price.toFixed(2)}
                                     </p>
                                 </button>
                             ) : (
                                 /* ROW ITEM */
                                 <div
                                     key={item.id}
-                                    className="flex items-center justify-between bg-zinc-900 rounded-xl border border-white/5 px-4 py-3 hover:border-blue-500 transition cursor-pointer"
+                                    onClick={() => setSelectedProduct(item)} // Make entire row clickable
+                                    className="flex items-center justify-between bg-zinc-900 rounded-xl border border-white/5 px-4 py-3 hover:border-blue-500 transition cursor-pointer group"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                            <ShoppingCart className="w-4 h-4" />
+                                        <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                            <Printer className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <p className="font-medium">
                                                 {item.name}
                                             </p>
                                             <p className="text-xs text-zinc-500">
-                                                ${item.price.toFixed(2)}
+                                                ₱{item.price.toFixed(2)}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <button
-                                        onClick={() => {
-                                            if (item.type === "product") {
-                                                setSelectedProduct(item);
-                                            }
-                                        }}
-                                        className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-semibold"
-                                    >
+                                    <button className="text-xs bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg font-semibold">
                                         Add
                                     </button>
                                 </div>
                             ),
                         )}
                     </div>
-                </main>
+                </main>{" "}
+                <div className="p-4 border-t border-white/5">
+                    <Pagination
+                        total={totalItems}
+                        offset={offset}
+                        limit={limit}
+                        onPageChange={(newOffset) => setOffset(newOffset)}
+                    />
+                </div>
             </div>
+
+            {/* Product Modal */}
             {selectedProduct && (
                 <ProductModal
                     open={!!selectedProduct}
@@ -216,57 +271,26 @@ const Cashiering: React.FC<Props> = ({ onBack, show }) => {
                     price={selectedProduct.price}
                     stock={selectedProduct.stock ?? 0}
                     onConfirm={(qty, total) => {
-                        console.log("ADD TO CART:", {
+                        const item: CheckoutItem = {
                             id: selectedProduct.id,
-                            qty,
-                            total,
-                        });
-
+                            name: selectedProduct.name,
+                            quantity: qty,
+                            price: selectedProduct.price,
+                            totalPrice: total,
+                            type: selectedProduct.type,
+                        };
+                        handleAddToCart(item);
                         // later → add to cashier cart store
                         setSelectedProduct(null);
                     }}
+                    type={"product"}
                 />
             )}
 
-            {/* 2. Checkout Screen: (20% width) */}
-            <div className="w-64 h-full bg-zinc-900/50 flex flex-col backdrop-blur-sm border-l border-white/5">
-                <div className="p-4 border-b border-white/10 flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-blue-400" />
-                    <h2 className="font-semibold text-sm lg:text-base uppercase tracking-wider">
-                        Checkout
-                    </h2>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-4 font-bold">
-                        Current Order
-                    </p>
-                    <div className="text-center py-10">
-                        <p className="text-xs text-zinc-600 italic">
-                            Cart is empty
-                        </p>
-                    </div>
-                </div>
-
-                {/* Footer / Totals */}
-                <div className="p-4 bg-black/40 border-t border-white/10 space-y-4">
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-zinc-400">Subtotal</span>
-                            <span>$0.00</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg">
-                            <span className="text-sm">Total</span>
-                            <span className="text-blue-400 text-xl">$0.00</span>
-                        </div>
-                    </div>
-
-                    <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98]">
-                        <CreditCard className="w-5 h-5" />
-                        Checkout
-                    </button>
-                </div>
-            </div>
+            <Checkout
+                checkoutItems={cartItems}
+                handleRemoveFromCart={handleRemoveFromCart}
+            />
         </div>
     );
 };

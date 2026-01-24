@@ -7,6 +7,7 @@ import {
     Users,
     Settings,
     LayoutDashboard,
+    Box,
 } from "lucide-react";
 import ReceiverView from "@/components/organisms/ReceiverView";
 import StaffSection from "@/components/organisms/StaffSection";
@@ -21,13 +22,13 @@ const AdminWrapper = () => {
 
     return (
         <div className="flex flex-col h-screen bg-black overflow-hidden">
-            <div className="h-14 border-b border-white/10 bg-[#050505] flex items-center justify-between px-4 z-100">
+            <div className="h-14 w-full absolute border-b border-white/10 bg-[#050505] flex items-center justify-between px-4 z-100">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 pr-4 border-r border-white/10">
                         <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white">
                             <LayoutDashboard size={14} />
                         </div>
-                        <span className="text-xs font-black uppercase tracking-widest hidden md:block">
+                        <span className="text-xs font-black text-white uppercase tracking-widest hidden md:block">
                             Admin Panel
                         </span>
                     </div>
@@ -49,6 +50,11 @@ const AdminWrapper = () => {
                                 id: "inventory",
                                 label: "Stock",
                                 icon: <Boxes size={14} />,
+                            },
+                            {
+                                id: "services",
+                                label: "Services",
+                                icon: <Box size={14} />,
                             },
                             {
                                 id: "staff",
@@ -76,10 +82,10 @@ const AdminWrapper = () => {
             </div>
 
             {/* 2. DYNAMIC CONTENT AREA */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative pt-14">
                 {/* CASHIER (always mounted) */}
                 <div
-                    className={`h-full w-full transition-opacity ${
+                    className={`h-full  w-full transition-opacity ${
                         activeTab === "cashier"
                             ? "opacity-100 pointer-events-auto"
                             : "opacity-0 pointer-events-none absolute inset-0"
@@ -90,7 +96,7 @@ const AdminWrapper = () => {
 
                 {/* OTHER VIEWS */}
                 {activeTab !== "cashier" && (
-                    <div className="p-8 h-full overflow-y-auto bg-[#0a0a0a] animate-in slide-in-from-bottom-2 duration-300">
+                    <div className="h-full overflow-y-auto bg-[#0a0a0a] animate-in slide-in-from-bottom-2 duration-300">
                         {activeTab === "sales" && <SalesSection />}
                         {activeTab === "inventory" && <InventorySection />}
                         {activeTab === "staff" && <StaffSection />}

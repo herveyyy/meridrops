@@ -22,3 +22,11 @@ export interface FileAnalysis {
     safety: "Safe" | "Suspicious" | "Unknown";
     fileType: string;
 }
+export interface CheckoutItem {
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    totalPrice: number;
+    type: "product" | "service";
+}

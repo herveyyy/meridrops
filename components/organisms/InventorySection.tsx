@@ -4,7 +4,7 @@ type Props = {};
 
 const InventorySection = (props: Props) => {
     return (
-        <div className="max-w-6xl mx-auto">
+        <div className=" space-y-8 h-[calc(100vh-(--spacing(14)))] overflow-y-auto p-4">
             <h2 className="text-3xl font-black uppercase mb-8">
                 Inventory Tracking
             </h2>
