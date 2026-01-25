@@ -175,6 +175,10 @@
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #2c2c2e;
     --sidebar-ring: #0a84ff;
+    --color-printing: 142 70% 45%;
+    --color-merch: 221 83% 53%;
+    --color-services: 271 81% 56%;
+    --color-printing: #22c55e;
 }
 
 .dark {

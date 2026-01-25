@@ -1,4 +1,4 @@
-import React from "react";
+import React, { use } from "react";
 import {
     Search,
     Plus,
@@ -8,8 +8,13 @@ import {
     MoreHorizontal,
     ArrowUpRight,
 } from "lucide-react";
+import { Button } from "../atoms/Button";
+import InventoryRow from "../molecules/sales/InventoryRow";
+import AddProductModal from "./modals/AddProductModal";
+import { useProductModal } from "@/hooks/useProductModal";
 
 const InventorySection = () => {
+    const { openModal, setOpenModal, handleAddProduct } = useProductModal();
     return (
         <div className=" space-y-8 h-[calc(100vh-(--spacing(14)))] overflow-y-auto p-4 animate-slide-up">
             {/* Header Area */}
@@ -22,10 +27,13 @@ const InventorySection = () => {
                         Manage stock levels and product categories
                     </p>
                 </div>
-                <button className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-neon">
+                <Button
+                    onClick={() => setOpenModal(true)}
+                    className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-neon"
+                >
                     <Plus className="w-5 h-5" />
                     New Product
-                </button>
+                </Button>
             </div>
 
             {/* Quick Stats Grid */}
@@ -122,53 +130,12 @@ const InventorySection = () => {
                     </tbody>
                 </table>
             </div>
+            <AddProductModal
+                isOpen={openModal}
+                onClose={() => setOpenModal(false)}
+                onAdd={handleAddProduct}
+            />
         </div>
-    );
-};
-
-// --- Sub-component for Rows ---
-const InventoryRow = ({ name, sku, category, stock, price, status }: any) => {
-    const statusColor =
-        status === "In Stock"
-            ? "text-success bg-success/10"
-            : status === "Low Stock"
-              ? "text-warning bg-warning/10"
-              : "text-danger bg-danger/10";
-
-    return (
-        <tr className="group hover:bg-white/2 transition-colors">
-            <td className="px-6 py-4">
-                <div className="flex flex-col">
-                    <span className="font-bold text-white text-sm">{name}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono uppercase">
-                        {sku}
-                    </span>
-                </div>
-            </td>
-            <td className="px-6 py-4 text-xs font-medium text-zinc-400">
-                {category}
-            </td>
-            <td className="px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${statusColor}`}
-                    >
-                        {status}
-                    </span>
-                    <span className="text-xs text-zinc-500 font-bold">
-                        {stock} units
-                    </span>
-                </div>
-            </td>
-            <td className="px-6 py-4 text-sm font-bold text-primary">
-                {price}
-            </td>
-            <td className="px-6 py-4 text-right">
-                <button className="p-2 hover:bg-white/5 rounded-xl transition-colors text-zinc-500">
-                    <MoreHorizontal className="w-5 h-5" />
-                </button>
-            </td>
-        </tr>
     );
 };
 

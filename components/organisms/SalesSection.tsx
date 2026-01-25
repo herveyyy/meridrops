@@ -27,6 +27,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart";
+import { DonutChartCard } from "./charts/DonutChartCard";
 
 // --- MOCK DATA ---
 const weeklyRevenue = [
@@ -40,24 +41,21 @@ const weeklyRevenue = [
 ];
 
 const categoryData = [
-    { category: "printing", value: 12500, fill: "var(--color-printing)" },
-    { category: "merch", value: 8400, fill: "var(--color-merch)" },
-    { category: "services", value: 4200, fill: "var(--color-services)" },
+    { category: "printing", value: 12500, fill: "#F59E0B" },
+    { category: "merch", value: 8400, fill: "#3B82F6" },
+    { category: "services", value: 4200, fill: "#10B981" },
 ];
 
-// --- CHART CONFIGS ---
+const categoryConfig = {
+    printing: { label: "Printing", color: "#F59E0B" },
+    merch: { label: "Merch", color: "#3B82F6" },
+    services: { label: "Services", color: "#10B981" },
+} satisfies ChartConfig;
 const revenueConfig = {
     revenue: {
         label: "Revenue",
-        color: "hsl(var(--chart-1))",
+        color: "white",
     },
-} satisfies ChartConfig;
-
-const categoryConfig = {
-    value: { label: "Sales" },
-    printing: { label: "Printing", color: "hsl(var(--chart-1))" },
-    merch: { label: "Merch", color: "hsl(var(--chart-2))" },
-    services: { label: "Services", color: "hsl(var(--chart-3))" },
 } satisfies ChartConfig;
 
 const SalesSection = () => {
@@ -185,86 +183,11 @@ const SalesSection = () => {
                     </ChartContainer>
                 </div>
 
-                {/* Category Breakdown (Donut Chart) */}
-                <div className="bg-zinc-900/50 border border-white/5 rounded-3xl p-6 flex flex-col justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400 mb-4">
-                        By Category
-                    </h3>
-                    <ChartContainer
-                        config={categoryConfig}
-                        className="mx-auto aspect-square max-h-62.5"
-                    >
-                        <PieChart>
-                            <ChartTooltip
-                                cursor={false}
-                                content={<ChartTooltipContent hideLabel />}
-                            />
-                            <Pie
-                                data={categoryData}
-                                dataKey="value"
-                                nameKey="category"
-                                innerRadius={60}
-                                strokeWidth={5}
-                            >
-                                <Label
-                                    content={({ viewBox }) => {
-                                        if (
-                                            viewBox &&
-                                            "cx" in viewBox &&
-                                            "cy" in viewBox
-                                        ) {
-                                            return (
-                                                <text
-                                                    x={viewBox.cx}
-                                                    y={viewBox.cy}
-                                                    textAnchor="middle"
-                                                    dominantBaseline="middle"
-                                                >
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={viewBox.cy}
-                                                        className="fill-white text-xl font-bold"
-                                                    >
-                                                        ₱
-                                                        {(
-                                                            totalRevenue / 1000
-                                                        ).toFixed(1)}
-                                                        k
-                                                    </tspan>
-                                                    <tspan
-                                                        x={viewBox.cx}
-                                                        y={
-                                                            (viewBox.cy || 0) +
-                                                            24
-                                                        }
-                                                        className="fill-zinc-500 text-[10px] uppercase font-black"
-                                                    >
-                                                        Total
-                                                    </tspan>
-                                                </text>
-                                            );
-                                        }
-                                    }}
-                                />
-                            </Pie>
-                        </PieChart>
-                    </ChartContainer>
-                    <div className="space-y-2 mt-4">
-                        {categoryData.map((item) => (
-                            <div
-                                key={item.category}
-                                className="flex items-center justify-between text-xs"
-                            >
-                                <span className="text-zinc-500 capitalize">
-                                    {item.category}
-                                </span>
-                                <span className="font-bold text-white">
-                                    ₱{item.value.toLocaleString()}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <DonutChartCard
+                    title="By Category"
+                    data={categoryData}
+                    config={categoryConfig}
+                />
             </div>
             {/* 3. Bottom Table / Top Items */}
             <div className="bg-zinc-900/50 border border-white/5 rounded-3xl overflow-hidden">
