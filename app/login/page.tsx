@@ -22,7 +22,6 @@ export default function LoginPage() {
             password,
             redirect: false,
         });
-
         if (result?.error) {
             setError("Invalid credentials or server access denied.");
             setLoading(false);

@@ -21,11 +21,10 @@ export async function proxy(request: NextRequest) {
                 secret: process.env.AUTH_SECRET!,
                 salt: cookieName,
             });
-
             const now = Math.floor(Date.now() / 1000);
             if (!decoded || (decoded.exp && (decoded.exp as number) < now)) {
                 return NextResponse.redirect(
-                    new URL("/login?reason=expired", request.url)
+                    new URL("/login?reason=expired", request.url),
                 );
             }
 

@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
     integer,
     sqliteTable,
@@ -14,7 +15,16 @@ export const users = sqliteTable("user", {
     email: text("email").unique().notNull(),
     emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
     image: text("image"),
-    password: text("password"), // Added for credentials
+    password: text("password"),
+    roles: text({ enum: ["cashier", "admin"] }).default("cashier"),
+    status: text({ enum: ["active", "inactive", "archived"] }).default(
+        "inactive",
+    ),
+    adminId: text("adminId"),
+    remarks: text("remarks"),
+    loginDate: text().default(sql`(CURRENT_TIMESTAMP)`),
+    createdAt: text().default(sql`(CURRENT_TIMESTAMP)`),
+    updatedAt: text().default(sql`(CURRENT_TIMESTAMP)`),
 });
 
 export const accounts = sqliteTable(
@@ -36,7 +46,7 @@ export const accounts = sqliteTable(
     },
     (account) => [
         primaryKey({ columns: [account.provider, account.providerAccountId] }),
-    ]
+    ],
 );
 
 export const sessions = sqliteTable("session", {
@@ -54,7 +64,7 @@ export const verificationTokens = sqliteTable(
         token: text("token").notNull(),
         expires: integer("expires", { mode: "timestamp_ms" }).notNull(),
     },
-    (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })]
+    (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
 
 export const type = () => {
